@@ -1,0 +1,18 @@
+1. Owner selects a car from the dashboard page and press new rental.
+
+2. App shows a QR code + a link to the agreement website. 
+
+3. Customer scans the QR code or clicks the shared link on his/her phone.
+
+4. After agreeing to the conditions, it forwards to the form website.
+
+5. Owner also get forwarded into the form page. 
+
+6. Here, Owner and customer both can fill the name, NIC no, address 
+and phone number of the customer. Also it can be signed by both phones. Only owner can upload photos to the form. Owner should upload 1-5 car photos(optional) and a meter mileage photo(necessary).
+
+7. After the customer finished the submission he should wait for the confirmation of the owner. 
+
+8. After the confirmation of the customer he/she should be forwarded to a page where he can download the photos the owner uploaded, the agreement and also the invoice.
+
+9. The rental should be saved to the rental history of the owner with the invoice.
