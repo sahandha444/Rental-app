@@ -146,7 +146,7 @@ const NewRentalPage = () => {
     window.scrollTo(0, 0); // Scroll to top to show the error
   };
   
-  // --- PDF Generation Function ---
+  // --- PDF Generation Function (Complete Version) ---
   const generateAgreementPDF = () => {
     const doc = new jsPDF();
     const signatureImage = sigPad.current.toDataURL('image/png');
@@ -154,7 +154,7 @@ const NewRentalPage = () => {
 
     // Simple Title
     doc.setFontSize(22);
-    doc.text("Rental Agreement", 105, 20, { align: 'center' });
+    doc.text("Rental Agreement / කුලී ගිවිසුම", 105, 20, { align: 'center' });
 
     // Details
     doc.setFontSize(12);
@@ -174,15 +174,77 @@ const NewRentalPage = () => {
     doc.text(`Total Cost: LKR ${totalCost}`, 20, 170);
     doc.text(`Advance Paid: LKR ${formData.advancePayment || 0}`, 20, 180);
 
-    // Terms (Add your real terms here)
-    doc.text("--- Terms & Conditions ---", 20, 200);
-    doc.text("1. I agree to return the vehicle in good condition.", 20, 210);
-    doc.text("2. I am responsible for all fuel.", 20, 220);
-    doc.text("3. (Add your other terms here)...", 20, 230);
+    // --- Terms & Conditions (English) ---
+    doc.setFontSize(14);
+    doc.text("--- Terms & Conditions ---", 105, 200, { align: 'center' });
+    doc.setFontSize(10);
+    
+    const englishTerms = [
+      `1. I, ${formData.customerName}, agree to rent the vehicle ${car.name} for the period and cost specified.`,
+      "2. I confirm I have inspected the vehicle, its keys, and documents, and receive it in good, drivable condition.",
+      "3. I am responsible for a security deposit. Any damage or repair costs will be deducted. If costs exceed the deposit, I agree to pay the difference.",
+      "4. The daily rate includes a maximum km limit. I agree to pay an extra fee for each km over this limit.",
+      "5. I will be charged a late fee for every hour the vehicle is returned past the agreed-upon time.",
+      "6. I am fully responsible for any accident damage if the insurance company denies the claim.",
+      "7. If the vehicle requires garage repair due to my fault, I agree to pay a daily 'loss of income' fee to the owner.",
+      "8. I am 100% responsible for all traffic violations, accidents, and any illegal activities.",
+      "9. I agree to pay a daily fee if the vehicle is impounded by police for any reason.",
+      "10. I confirm I have checked the vehicle's oil, coolant, and tire pressure and am liable for neglect.",
+      "11. The vehicle must be returned clean (interior and exterior) or a cleaning fee will be charged.",
+      "12. PROHIBITED: Driving under the influence, all illegal activities, letting unlicensed/underage/inexperienced persons drive, sub-leasing, or selling the vehicle."
+    ];
 
-    // Signature
-    doc.text("Customer Signature:", 20, 250);
-    doc.addImage(signatureImage, 'PNG', 20, 255, 100, 30);
+    const textOptions = { maxWidth: 170 }; // Max width for text wrapping
+    let yPos = 210; // Starting Y position for terms
+    
+    englishTerms.forEach(term => {
+      const lines = doc.splitTextToSize(term, textOptions.maxWidth);
+      doc.text(lines, 20, yPos);
+      yPos += (lines.length * 5) + 2; // Move Y down (5 per line + 2 padding)
+    });
+
+    // --- Terms & Conditions (Sinhala) ---
+    // !!! WARNING: THIS WILL NOT RENDER WITHOUT A CUSTOM FONT !!!
+    // You must add a font file (e.g., IskoolaPota.ttf) to jsPDF and set it here
+    // doc.setFont('IskoolaPota'); 
+    
+    yPos += 10; // Add space
+    doc.setFontSize(14);
+    doc.text("--- නියමයන් සහ කොන්දේසි ---", 105, yPos, { align: 'center' });
+    yPos += 10;
+    doc.setFontSize(10);
+
+    const sinhalaTerms = [
+      "1. වාහනය පරීක්ෂා කිරීම: වාහනය, යතුරු සහ ලියකියවිලි පරීක්ෂා කර, හොඳ ධාවන තත්වයෙන් භාරගත් බවට මම එකඟ වෙමි.",
+      "2. තැන්පතු මුදල: වාහනයේ හානි සඳහා තැන්පතු මුදලින් අඩුකරන අතර, එය ප්‍රමාණවත් නොවන්නේ නම් ඉතිරි මුදල ගෙවීමට මම එකඟ වෙමි.",
+      "3. අමතර ගාස්තු: නියමිත කිලෝමීටර් සීමාව ඉක්මවූ විට, එක් එක් අමතර කිලෝමීටරය සඳහා ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.",
+      "4. ප්‍රමාද ගාස්තු: නියමිත වේලාවට වාහනය භාර දීමට නොහැකි වුවහොත්, ප්‍රමාද වන සෑම පැයකටම අමතර ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.",
+      "5. රක්ෂණ: රක්ෂණ සමාගම අලාභ ගෙවීම ප්‍රතික්ෂේප කළහොත්, සම්පූර්ණ අලාභය ගෙවීමට මම වගකිව යුතුය.",
+      "6. ගරාජ් ගාස්තු: මගේ වරදක් නිසා සිදුවන අනතුරකදී, වාහනය ගරාජයේ තබන දින ගණන සඳහා දෛනික පාඩු ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.",
+      "7. වගකීම: සියලුම මාර්ග නීති කඩකිරීම්, අනතුරු සහ නීති විරෝධී ක්‍රියා සඳහා සම්පූර්ණ වගකීම මම දරමි.",
+      "8. පොලිස් භාරය: මගේ භාවිතය හේතුවෙන් වාහනය පොලිස් භාරයට පත්වුවහොත්, ඒ දින ගණන සඳහා දෛනික අලාභයක් ගෙවීමට මම එකඟ වෙමි.",
+      "9. නඩත්තුව: වාහනයේ එන්ජින් ඔයිල්, කූලන්ට් සහ ටයර් පීඩනය මා විසින් පරීක්ෂා කළ බවත්, එසේ නොකිරීමෙන් සිදුවන හානියට මා වගකිව යුතු බවත් සහතික කරමි.",
+      "10. පිරිසිදු කිරීම: වාහනය ආපසු භාර දීමේදී ඇතුළත හා පිටත පිරිසිදු කර භාර දිය යුතු අතර, එසේ නොමැති නම් පිරිසිදු කිරීමේ ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.",
+      "11. තහනම්: මත්පැන් පානය කර රිය පැදවීම, නීති විරෝධී කටයුතු, බලපත්‍ර රහිත/නුපුහුණු අයට පැදවීමට දීම, සහ වෙනත් අයට කුලියට දීම සපුරා තහනම්."
+    ];
+    
+    sinhalaTerms.forEach(term => {
+      const lines = doc.splitTextToSize(term, textOptions.maxWidth);
+      doc.text(lines, 20, yPos);
+      yPos += (lines.length * 5) + 2; // Move Y down
+    });
+
+    // --- Signature ---
+    // Check if we need a new page
+    if (yPos > 250) { // If Y is near the bottom (297)
+      doc.addPage();
+      yPos = 20; // Reset Y to top of new page
+    } else {
+      yPos += 10; // Add padding
+    }
+    
+    doc.text("Customer Signature / පාරිභෝගික අත්සන:", 20, yPos);
+    doc.addImage(signatureImage, 'PNG', 20, yPos + 5, 100, 30);
     
     // Convert PDF to a File object
     const pdfBlob = doc.output('blob');
@@ -429,13 +491,44 @@ const NewRentalPage = () => {
           <strong>Advance:</strong> LKR {formData.advancePayment || 0}
         </div>
         
-        <p><strong>Terms:</strong></p>
-        <ol style={{fontSize: '12px', paddingLeft: '20px'}}>
-          <li>I, {formData.customerName}, agree to rent the vehicle {car.name} for the period and cost specified.</li>
-          <li>I have inspected the vehicle and agree its condition is as noted (see photos).</li>
-          <li>I agree to return the vehicle on time and in the same condition.</li>
-          <li>(Add your other terms here...)</li>
-        </ol>
+        <p><strong>Terms and Conditions / නියමයන් සහ කොන්දේසි:</strong></p>
+        
+        {/* --- ENGLISH TERMS --- */}
+        <div style={{textAlign: 'left', paddingLeft: '20px', marginBottom: '15px'}}>
+          <strong>In English:</strong>
+          <ol style={{fontSize: '12px', paddingLeft: '20px'}}>
+            <li>I, {formData.customerName}, agree to rent the vehicle {car.name} for the period and cost specified.</li>
+            <li>I confirm I have inspected the vehicle, its keys, and documents, and receive it in good, drivable condition.</li> {/* <-- ADDED POINT */}
+            <li>I am responsible for a security deposit. Any damage or repair costs will be deducted. If costs exceed the deposit, I agree to pay the difference.</li>
+            <li>The daily rate includes a maximum km limit. I agree to pay an extra fee for each km over this limit.</li>
+            <li>I will be charged a late fee for every hour the vehicle is returned past the agreed-upon time.</li>
+            <li>I am fully responsible for any accident damage if the insurance company denies the claim.</li>
+            <li>If the vehicle requires garage repair due to my fault, I agree to pay a daily 'loss of income' fee to the owner.</li>
+            <li>I am 100% responsible for all traffic violations, accidents, and any illegal activities during the rental period.</li>
+            <li>I agree to pay a daily fee if the vehicle is impounded by police for any reason related to my use.</li>
+            <li>I confirm I have checked the vehicle's engine oil, coolant, and tire pressure and am liable for any damage from neglect.</li>
+            <li>The vehicle must be returned clean (interior and exterior) or a cleaning fee will be charged.</li>
+            <li style={{fontWeight: 'bold'}}>PROHIBITED: Driving under the influence, all illegal activities, letting unlicensed/underage/inexperienced persons drive, sub-leasing, or selling the vehicle.</li>
+          </ol>
+        </div>
+
+        {/* --- SINHALA TERMS --- */}
+        <div style={{textAlign: 'left', paddingLeft: '20px', fontFamily: 'Arial, "Iskoola Pota", sans-serif'}}>
+          <strong>සිංහලෙන්:</strong>
+          <ol style={{fontSize: '12px', paddingLeft: '20px'}}>
+            <li>වාහනය පරීක්ෂා කිරීම: වාහනය, යතුරු සහ ලියකියවිලි පරීක්ෂා කර, හොඳ ධාවන තත්වයෙන් භාරගත් බවට මම එකඟ වෙමි.</li> {/* <-- ADDED POINT */}
+            <li>තැන්පතු මුදල: වාහනයේ හානි සඳහා තැන්පතු මුදලින් අඩුකරන අතර, එය ප්‍රමාණවත් නොවන්නේ නම් ඉතිරි මුදල ගෙවීමට මම එකඟ වෙමි.</li>
+            <li>අමතර ගාස්තු: නියමිත කිලෝමීටර් සීමාව ඉක්මවූ විට, එක් එක් අමතර කිලෝමීටරය සඳහා ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.</li>
+            <li>ප්‍රමාද ගාස්තු: නියමිත වේලාවට වාහනය භාර දීමට නොහැකි වුවහොත්, ප්‍රමාද වන සෑම පැයකටම අමතර ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.</li>
+            <li>රක්ෂණ: රක්ෂණ සමාගම අලාභ ගෙවීම ප්‍රතික්ෂේප කළහොත්, සම්පූර්ණ අලාභය ගෙවීමට මම වගකිව යුතුය.</li>
+            <li>ගරාජ් ගාස්තු: මගේ වරදක් නිසා සිදුවන අනතුරකදී, වාහනය ගරාජයේ තබන දින ගණන සඳහා දෛනික පාඩු ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.</li>
+            <li>වගකීම: සියලුම මාර්ග නීති කඩකිරීම්, අනතුරු සහ නීති විරෝධී ක්‍රියා සඳහා සම්පූර්ණ වගකීම මම දරමි.</li>
+            <li>පොලිස් භාරය: මගේ භාවිතය හේතුවෙන් වාහනය පොලිස් භාරයට පත්වුවහොත්, ඒ දින ගණන සඳහා දෛනික අලාභයක් ගෙවීමට මම එකඟ වෙමි.</li>
+            <li>නඩත්තුව: වාහනයේ එන්ජින් ඔයිල්, කූලන්ට් සහ ටයර් පීඩනය මා විසින් පරීක්ෂා කළ බවත්, එසේ නොකිරීමෙන් සිදුවන හානියට මා වගකිව යුතු බවත් සහතික කරමි.</li>
+            <li>පිරිසිදු කිරීම: වාහනය ආපසු භාර දීමේදී ඇතුළත හා පිටත පිරිසිදු කර භාර දිය යුතු අතර, එසේ නොමැති නම් පිරිසිදු කිරීමේ ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.</li>
+            <li style={{fontWeight: 'bold'}}>තහනම්: මත්පැන් පානය කර රිය පැදවීම, නීති විරෝධී කටයුතු, බලපත්‍ර රහිත/නුපුහුණු අයට පැදවීමට දීම, සහ වෙනත් අයට කුලියට දීම සපුරා තහනම්.</li>
+          </ol>
+        </div>
       </div>
 
       <label style={{marginTop: '20px', display: 'block', fontWeight: 'bold'}}>Customer Signature</label>
