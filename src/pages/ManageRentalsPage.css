@@ -1,5 +1,58 @@
 /* File: src/pages/ManageRentalsPage.css (NEW FILE) */
 
+/* Style for the new PDF link-buttons */
+.view-pdf-button {
+  background-color: #007bff;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  margin-left: 8px; /* Space between buttons */
+  display: inline-block;
+}
+
+.view-pdf-button:hover {
+  background-color: #0056b3;
+}
+
+/* Make buttons stack on small screens if needed */
+.actions-cell {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap; /* Allows wrapping */
+  gap: 8px; /* Modern way to add space */
+  align-items: center;
+  border: none;
+}
+
+/* Ensure buttons in the cell don't have extra margin */
+.actions-cell .view-pdf-button,
+.actions-cell .end-rental-button {
+  margin-left: 0; 
+}
+
+/* In ManageRentalsPage.css */
+
+.view-photos-button {
+  background-color: #6c757d; /* A neutral gray */
+  color: white;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-block;
+  font-style: italic;
+}
+
+.view-photos-button:hover {
+  background-color: #5a6268;
+}
+
 .rentals-page-container {
   max-width: 1000px;
   margin: 2rem auto;

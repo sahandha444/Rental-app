@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import SignatureCanvas from 'react-signature-canvas';
 import { jsPDF } from 'jspdf'; // <-- Make sure to run: npm install jspdf
 import './NewRentalPage.css'; // You'll need to update this CSS for the new fields
+import { iskoolaPotaBase64 } from '../components/IskoolaPothaFont.js';
 
 // Helper to convert signature to a file
 function dataURLtoFile(dataurl, filename) {
@@ -146,39 +147,85 @@ const NewRentalPage = () => {
     window.scrollTo(0, 0); // Scroll to top to show the error
   };
   
-  // --- PDF Generation Function (Complete Version) ---
+  // --- PDF Generation Function (Complete, Structured Version) ---
   const generateAgreementPDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF('p', 'pt', 'a4'); // Use A4 paper size for better spacing
     const signatureImage = sigPad.current.toDataURL('image/png');
     const totalCost = (formData.rentalDays * (car.daily_rate || 0)).toFixed(2);
-
-    // Simple Title
-    doc.setFontSize(22);
-    doc.text("Rental Agreement / කුලී ගිවිසුම", 105, 20, { align: 'center' });
-
-    // Details
-    doc.setFontSize(12);
-    doc.text("--- Customer Details ---", 20, 40);
-    doc.text(`Name: ${formData.customerName}`, 20, 50);
-    doc.text(`ID (NIC): ${formData.customerID}`, 20, 60);
-    doc.text(`Phone: ${formData.customerPhone}`, 20, 70);
-    doc.text(`Address: ${formData.customerAddress}`, 20, 80);
-
-    doc.text("--- Vehicle Details ---", 20, 100);
-    doc.text(`Car: ${car.name}`, 20, 110);
-    doc.text(`Plate: ${car.plate_number}`, 20, 120);
-    doc.text(`Starting Mileage: ${formData.startMileage} km`, 20, 130);
     
-    doc.text("--- Rental & Payment Details ---", 20, 150);
-    doc.text(`Rental Period: ${formData.rentalDays} days`, 20, 160);
-    doc.text(`Total Cost: LKR ${totalCost}`, 20, 170);
-    doc.text(`Advance Paid: LKR ${formData.advancePayment || 0}`, 20, 180);
+    const pageMargin = 40;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const textWidth = pageWidth - (pageMargin * 2);
+    let yPos = 60; // Start Y position
 
-    // --- Terms & Conditions (English) ---
-    doc.setFontSize(14);
-    doc.text("--- Terms & Conditions ---", 105, 200, { align: 'center' });
+    // --- Helper for Titles ---
+    const addSectionTitle = (title) => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text(title, pageMargin, yPos);
+      yPos += 20;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+    };
+
+    // --- Helper for Key-Value Pairs ---
+    const addDetail = (label, value) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, pageMargin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, pageMargin + 120, yPos); // Indent the value
+      yPos += 18;
+    };
+    
+    // --- Helper for Text Paragraphs ---
+    const addParagraph = (text) => {
+      const lines = doc.splitTextToSize(text, textWidth);
+      doc.text(lines, pageMargin, yPos);
+      yPos += (lines.length * 12) + 6; // line height + padding
+    };
+    
+    // --- 1. ADD SINHALA FONT ---
+    try {
+      if (iskoolaPotaBase64) {
+        doc.addFileToVFS('IskoolaPota.ttf', iskoolaPotaBase64);
+        doc.addFont('IskoolaPota.ttf', 'IskoolaPota', 'normal');
+        console.log("Sinhala font added successfully.");
+      } else {
+        console.warn("Sinhala font base64 string is missing.");
+      }
+    } catch (e) {
+      console.error("Error adding Sinhala font:", e);
+    }
+    
+    // --- 2. DOCUMENT TITLE ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text("Rental Agreement", pageWidth / 2, yPos, { align: 'center' });
+    yPos += 20;
+    // Set font to Sinhala for the title
+    if (iskoolaPotaBase64) doc.setFont('IskoolaPota'); 
+    doc.setFontSize(16);
+    doc.text("කුලී ගිවිසුම", pageWidth / 2, yPos, { align: 'center' });
+    yPos += 30;
+    
+    // Reset to default font
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     
+    // --- 3. RENTAL DETAILS ---
+    addSectionTitle("Rental Details");
+    addDetail("Customer Name:", formData.customerName);
+    addDetail("Customer ID (NIC):", formData.customerID);
+    addDetail("Customer Phone:", formData.customerPhone);
+    addDetail("Vehicle:", `${car.name} (${car.plate_number})`);
+    addDetail("Start Mileage:", `${formData.startMileage} km`);
+    addDetail("Rental Period:", `${formData.rentalDays} days`);
+    addDetail("Total Cost:", `LKR ${totalCost}`);
+    addDetail("Advance Paid:", `LKR ${formData.advancePayment || 0}`);
+    yPos += 20; // Extra space
+
+    // --- 4. TERMS & CONDITIONS (ENGLISH) ---
+    addSectionTitle("Terms & Conditions");
     const englishTerms = [
       `1. I, ${formData.customerName}, agree to rent the vehicle ${car.name} for the period and cost specified.`,
       "2. I confirm I have inspected the vehicle, its keys, and documents, and receive it in good, drivable condition.",
@@ -193,25 +240,21 @@ const NewRentalPage = () => {
       "11. The vehicle must be returned clean (interior and exterior) or a cleaning fee will be charged.",
       "12. PROHIBITED: Driving under the influence, all illegal activities, letting unlicensed/underage/inexperienced persons drive, sub-leasing, or selling the vehicle."
     ];
-
-    const textOptions = { maxWidth: 170 }; // Max width for text wrapping
-    let yPos = 210; // Starting Y position for terms
+    englishTerms.forEach(addParagraph);
+    yPos += 20;
     
-    englishTerms.forEach(term => {
-      const lines = doc.splitTextToSize(term, textOptions.maxWidth);
-      doc.text(lines, 20, yPos);
-      yPos += (lines.length * 5) + 2; // Move Y down (5 per line + 2 padding)
-    });
+    // --- Check for New Page ---
+    if (yPos > 700) { // Check if we're near the bottom
+      doc.addPage();
+      yPos = pageMargin;
+    }
 
-    // --- Terms & Conditions (Sinhala) ---
-    // !!! WARNING: THIS WILL NOT RENDER WITHOUT A CUSTOM FONT !!!
-    // You must add a font file (e.g., IskoolaPota.ttf) to jsPDF and set it here
-    // doc.setFont('IskoolaPota'); 
-    
-    yPos += 10; // Add space
+    // --- 5. TERMS & CONDITIONS (SINHALA) ---
+    // SET FONT TO SINHALA
+    if (iskoolaPotaBase64) doc.setFont('IskoolaPota'); 
     doc.setFontSize(14);
-    doc.text("--- නියමයන් සහ කොන්දේසි ---", 105, yPos, { align: 'center' });
-    yPos += 10;
+    doc.text("නියමයන් සහ කොන්දේසි", pageMargin, yPos);
+    yPos += 20;
     doc.setFontSize(10);
 
     const sinhalaTerms = [
@@ -222,32 +265,33 @@ const NewRentalPage = () => {
       "5. රක්ෂණ: රක්ෂණ සමාගම අලාභ ගෙවීම ප්‍රතික්ෂේප කළහොත්, සම්පූර්ණ අලාභය ගෙවීමට මම වගකිව යුතුය.",
       "6. ගරාජ් ගාස්තු: මගේ වරදක් නිසා සිදුවන අනතුරකදී, වාහනය ගරාජයේ තබන දින ගණන සඳහා දෛනික පාඩු ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.",
       "7. වගකීම: සියලුම මාර්ග නීති කඩකිරීම්, අනතුරු සහ නීති විරෝධී ක්‍රියා සඳහා සම්පූර්ණ වගකීම මම දරමි.",
-      "8. පොලිස් භාරය: මගේ භාවිතය හේතුවෙන් වාහනය පොලිස් භාරයට පත්වුවහොත්, ඒ දින ගණන සඳහා දෛනික අලාභයක් ගෙවීමට මම එකඟ වෙමි.",
+      "8. පොලිස් භාරය: මගේ භාවිතය හේතුවෙන් වාහනය පොලිස් භාරයට පත්වුවහොTත්, ඒ දින ගණන සඳහා දෛනික අලාභයක් ගෙවීමට මම එකඟ වෙමි.",
       "9. නඩත්තුව: වාහනයේ එන්ජින් ඔයිල්, කූලන්ට් සහ ටයර් පීඩනය මා විසින් පරීක්ෂා කළ බවත්, එසේ නොකිරීමෙන් සිදුවන හානියට මා වගකිව යුතු බවත් සහතික කරමි.",
       "10. පිරිසිදු කිරීම: වාහනය ආපසු භාර දීමේදී ඇතුළත හා පිටත පිරිසිදු කර භාර දිය යුතු අතර, එසේ නොමැති නම් පිරිසිදු කිරීමේ ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.",
       "11. තහනම්: මත්පැන් පානය කර රිය පැදවීම, නීති විරෝධී කටයුතු, බලපත්‍ර රහිත/නුපුහුණු අයට පැදවීමට දීම, සහ වෙනත් අයට කුලියට දීම සපුරා තහනම්."
     ];
-    
-    sinhalaTerms.forEach(term => {
-      const lines = doc.splitTextToSize(term, textOptions.maxWidth);
-      doc.text(lines, 20, yPos);
-      yPos += (lines.length * 5) + 2; // Move Y down
-    });
+    sinhalaTerms.forEach(addParagraph);
 
-    // --- Signature ---
-    // Check if we need a new page
-    if (yPos > 250) { // If Y is near the bottom (297)
+    // --- 6. SIGNATURE ---
+    // Reset to default font
+    doc.setFont('helvetica', 'normal');
+    yPos += 30;
+    
+    // Check for New Page again
+    if (yPos > 740) {
       doc.addPage();
-      yPos = 20; // Reset Y to top of new page
-    } else {
-      yPos += 10; // Add padding
+      yPos = pageMargin;
     }
     
-    doc.text("Customer Signature / පාරිභෝගික අත්සන:", 20, yPos);
-    doc.addImage(signatureImage, 'PNG', 20, yPos + 5, 100, 30);
-    
-    // Convert PDF to a File object
+    doc.text("Customer Signature / පාරිභෝගික අත්සන:", pageMargin, yPos);
+    yPos += 10;
+    doc.addImage(signatureImage, 'PNG', pageMargin, yPos, 180, 60); // Add signature
+    doc.line(pageMargin, yPos + 70, pageMargin + 200, yPos + 70); // Add signature line
+    doc.text(formData.customerName, pageMargin, yPos + 85);
+
+    // --- 7. FINAL OUTPUT ---
     const pdfBlob = doc.output('blob');
+    // THIS IS THE CORRECTED LINE:
     return new File([pdfBlob], `agreement-${formData.customerID}-${uuidv4()}.pdf`, { type: 'application/pdf' });
   };
 

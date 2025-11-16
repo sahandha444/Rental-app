@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'; // 1. Import useRef
 import { supabase } from '../supabaseClient';
+import PhotoViewerModal from '../components/PhotoViewerModal';
 import ReturnRentalModal from '../components/ReturnRentalModal'; // Import the new modal
 import './ManageRentalsPage.css';
 
@@ -13,7 +14,9 @@ const ManageRentalsPage = () => {
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [selectedRental, setSelectedRental] = useState(null);
   const [selectedCar, setSelectedCar] = useState(null); // New state for car details
-  
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [rentalForPhotos, setRentalForPhotos] = useState(null);
+
   // State and Ref for Real-Time Updates
   const [rentals, setRentals] = useState([]);
   const rentalsRef = useRef(rentals); // Fixes 'rentalsRef is not defined'
@@ -114,6 +117,16 @@ const ManageRentalsPage = () => {
     setShowReturnModal(false);
   };
 
+  const openPhotoModal = (rental) => {
+    setRentalForPhotos(rental);
+    setShowPhotoModal(true);
+  };
+
+  const closePhotoModal = () => {
+    setRentalForPhotos(null);
+    setShowPhotoModal(false);
+  };
+
   // --- Filtering for JSX ---
   const pendingRentals = rentals.filter(r => r.status === 'active'); 
   const completedRentals = rentals.filter(r => r.status === 'completed');
@@ -147,12 +160,27 @@ const ManageRentalsPage = () => {
                   <td>{rental.car_name}</td>
                   <td>{rental.customer_name}</td>
                   <td>{new Date(rental.rental_start_date).toLocaleDateString()}</td>
-                  <td>
+                  <td className="actions-cell">
                     <button 
                       className="end-rental-button"
                       onClick={() => openReturnModal(rental)}
                     >
                       Return Vehicle
+                    </button>
+                    <a 
+                      href={rental.agreement_pdf_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="view-pdf-button"
+                    >
+                      Agreement
+                    </a>
+                    {/* --- ADD THIS BUTTON --- */}
+                    <button 
+                      className="view-photos-button" 
+                      onClick={() => openPhotoModal(rental)}
+                    >
+                      Photos
                     </button>
                   </td>
                 </tr>
@@ -172,11 +200,12 @@ const ManageRentalsPage = () => {
               <th>Customer</th>
               <th>Return Date</th>
               <th>Final Cost</th>
+              <th>Actions</th> {/* <-- NEW HEADER */}
             </tr>
           </thead>
           <tbody>
             {completedRentals.length === 0 ? (
-              <tr><td colSpan="4">No completed rentals yet.</td></tr>
+              <tr><td colSpan="5">No completed rentals yet.</td></tr> /* <-- Updated colSpan to 5 */
             ) : (
               completedRentals.map(rental => (
                 <tr key={rental.id} className="completed-row">
@@ -184,6 +213,32 @@ const ManageRentalsPage = () => {
                   <td>{rental.customer_name}</td>
                   <td>{rental.return_date ? new Date(rental.return_date).toLocaleDateString() : '-'}</td>
                   <td>LKR {rental.final_total_cost ? rental.final_total_cost.toFixed(2) : '-'}</td>
+                  
+                  <td className="actions-cell">
+                    <a 
+                      href={rental.agreement_pdf_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="view-pdf-button"
+                    >
+                      Agreement
+                    </a>
+                    <a 
+                      href={rental.return_invoice_pdf_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="view-pdf-button"
+                    >
+                      Invoice
+                    </a>
+                    {/* --- ADD THIS BUTTON --- */}
+                    <button 
+                      className="view-photos-button" 
+                      onClick={() => openPhotoModal(rental)}
+                    >
+                      Photos
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -199,10 +254,18 @@ const ManageRentalsPage = () => {
           onClose={closeReturnModal}
           onSuccess={() => {
             closeReturnModal();
-            // The realtime subscription will handle the list update!
           }}
         />
       )}
+
+      {/* --- ADD THIS NEW MODAL --- */}
+      {showPhotoModal && rentalForPhotos && (
+        <PhotoViewerModal
+          rental={rentalForPhotos}
+          onClose={closePhotoModal}
+        />
+      )}
+      
     </div>
   );
 };
