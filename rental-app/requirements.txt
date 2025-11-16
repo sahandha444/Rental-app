@@ -1,0 +1,8 @@
+1. The owner logs into the web app by giving in username and password. This should be changable from inside the app.
+
+2. Owner adds new vehicles or removes vehicles from the dashboard. It should contain vehicle's name, plane no, current mileage, daily rate, extra mileage rate, extra hourly rate and a photo of the vehicle to show on dashboard.
+
+3. 
+   3.1. When owner clicks start new rental firstly, there must be a form to fill Customer's name, ID card number, mobile number, address and insert customer's driver license photo(front and back)(needed) and id card photo(front and back) (optional). Remarks field is also needed.
+
+   3.2. Then it gets forwarded to another form where it asks for rental time period (in days), current mileage, advance, remarks and car's dashboard photo of mileage. An optional field to add 1 to 5 photos of the car.

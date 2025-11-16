@@ -1,9 +1,0 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyAgNpgJ6KvmfyFf8ihTSwmhHPAcP1wNdyc",
-  authDomain: "yalu-car-rental.firebaseapp.com",
-  projectId: "yalu-car-rental",
-  storageBucket: "yalu-car-rental.firebasestorage.app",
-  messagingSenderId: "71422305086",
-  appId: "1:71422305086:web:3cbf4b68e1fcf5ffe3c26f",
-  measurementId: "G-YDF7G3V3DS"
-};

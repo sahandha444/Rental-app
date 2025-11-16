@@ -1,20 +1,241 @@
-/* File: src/App.css */
+/* --- Global Styles --- */
+:root {
+  --primary-color: #007bff;
+  --primary-hover: #0056b3;
+  --bg-color: #f8f9fa;
+  --nav-bg: #ffffff;
+  --text-color: #212529;
+  --text-muted: #6c757d;
+  --border-color: #dee2e6;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
 
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  /* Crucial: Prevents horizontal scroll when menu is off-screen */
+  overflow-x: hidden; 
+}
+
+/* Stops content from shifting when menu is open */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  padding-top: 80px;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+}
+
+/* --- Navbar --- */
 .navbar {
-  background-color: #333;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 65px; 
+  background-color: var(--nav-bg);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  z-index: 1000;
+}
+
+.navbar-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1.5rem;
 }
 
 .nav-logo {
-  color: white;
-  font-size: 1.5rem;
-  font-weight: bold;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
   text-decoration: none;
+  z-index: 1001;
 }
 
-.app-container {
-  max-width: 900px;
-  margin: 2rem auto; /* Center the content */
-  padding: 0 1rem;
+/* Desktop Links */
+.desktop-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-link {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  background-color: #e9ecef;
+  color: var(--text-color);
+}
+
+.settings-link {
+  background-color: #f1f3f5;
+  color: #495057;
+}
+
+/* --- Hamburger Button (Hidden on Desktop) --- */
+.hamburger-btn {
+  display: none; 
+  flex-direction: column;
+  justify-content: space-around;
+  width: 30px;
+  height: 25px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1100; /* Must be higher than the menu itself */
+}
+
+.bar {
+  width: 100%;
+  height: 3px;
+  background-color: var(--text-color);
+  border-radius: 10px;
+  transition: all 0.3s linear;
+  position: relative;
+  transform-origin: 1px;
+}
+
+/* Hamburger Animation (Crucial for visual feedback) */
+.hamburger-btn.open .bar:nth-child(1) {
+  transform: rotate(45deg);
+}
+.hamburger-btn.open .bar:nth-child(2) {
+  opacity: 0;
+}
+.hamburger-btn.open .bar:nth-child(3) {
+  transform: rotate(-45deg);
+}
+
+/* --- Mobile Menu (Sliding Panel) --- */
+.mobile-menu {
+  /* 1. Hide on large screens by default */
+  display: none; 
+  
+  /* 2. Positioning and layout */
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 280px;
+  max-width: 80vw; /* Responsive width */
+  height: 100%;
+  background-color: #ffffff;
+  box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+  z-index: 1050; 
+  padding: 2rem;
+  flex-direction: column;
+  gap: 1.5rem;
+  
+  /* 3. Initial Hidden/Off-Screen State (Mobile-specific) */
+  transform: translateX(100%); 
+  visibility: hidden;
+  opacity: 0;
+  
+  /* 4. Transition: Transform for slide, visibility for non-snapping hide */
+  transition: transform 0.3s ease-out, visibility 0s 0.3s, opacity 0.3s ease-out;
+}
+
+/* Class to slide it in */
+.mobile-menu.open {
+  transform: translateX(0);
+  visibility: visible;
+  opacity: 1;
+  transition-delay: 0s, 0s, 0s; /* Ensure all parts transition immediately when opening */
+}
+
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.mobile-link {
+  text-decoration: none;
+  font-size: 1.1rem;
+  color: var(--text-color);
+  padding: 0.75rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+  font-weight: 500;
+}
+
+.mobile-link:hover {
+  background-color: #f1f3f5;
+  color: var(--primary-color);
+}
+
+/* --- Overlay --- */
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-menu-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* --- Responsive Breakpoints (Mobile Only Styles) --- */
+@media (max-width: 768px) {
+  .desktop-links {
+    display: none; 
+  }
+
+  .hamburger-btn {
+    display: flex; /* Show burger button on mobile */
+  }
+  
+  .app-container {
+    padding: 1rem;
+    padding-top: 80px;
+  }
+
+  /* 💡 CRITICAL FIX: Only enable the mobile menu on mobile screens
+     The default styles (transform: 100%, visibility: hidden) will ensure it starts hidden.
+     This display property is the key switch between desktop/mobile views. */
+  .mobile-menu {
+    display: flex; 
+  }
 }

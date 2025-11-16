@@ -1,0 +1,137 @@
+/* File: src/pages/ManageRentalsPage.css (NEW FILE) */
+
+.rentals-page-container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.rentals-list-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  overflow-x: auto; /* Allow table to scroll on small screens */
+}
+
+.rentals-list-container h2 {
+  margin-top: 0;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 0.5rem;
+}
+
+.rentals-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.rentals-table th,
+.rentals-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.rentals-table th {
+  font-size: 0.9rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rentals-table td {
+  color: #212529;
+}
+
+.rentals-table tr:last-child td {
+  border-bottom: none;
+}
+
+.completed-row td {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.end-rental-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.end-rental-button:hover {
+  background-color: #c82333;
+}
+
+/* --- Modal Styling --- */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  max-width: 450px;
+  width: 90%;
+  text-align: center;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+}
+
+.modal-button {
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 48%;
+}
+
+.modal-button.cancel {
+  background-color: #6c757d;
+  color: white;
+}
+.modal-button.cancel:hover {
+  background-color: #5a6268;
+}
+
+.modal-button.confirm {
+  background-color: #dc3545;
+  color: white;
+}
+.modal-button.confirm:hover {
+  background-color: #c82333;
+}
+
+.modal-button:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}

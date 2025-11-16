@@ -18,20 +18,19 @@ const DashboardPage = () => {
     // 5. Create an async function to fetch the data
     const fetchVehicles = async () => {
       try {
-        // --- THIS IS THE NEW SUPABASE CODE ---
+        // --- THIS IS THE UPDATED CODE ---
         const { data, error } = await supabase
-          .from('vehicles') // The table name
-          .select('*');     // Get all columns
+          .from('vehicles')
+          .select('*')
+          .eq('is_active', true); // 1. ONLY GET ACTIVE CARS
+        // ---------------------------------
         
         if (error) throw error;
-        
-        setVehicles(data); // 7. Update your state with the real data
-        // ----------------------------------------
-        
+        setVehicles(data);
       } catch (error) {
         console.error("Error fetching vehicles: ", error.message);
       } finally {
-        setLoading(false); // 8. Set loading to false (all done)
+        setLoading(false);
       }
     };
 
