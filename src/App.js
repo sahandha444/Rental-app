@@ -15,14 +15,14 @@ import RedirectPage from './pages/RedirectPage';
 import { supabase } from './supabaseClient'; 
 
 // Helper component to close menu on route change
-const ScrollToTop = ({ closeMenu }) => {
+const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
-    closeMenu(); // Close menu whenever we change pages
-  }, [pathname, closeMenu]);
+  }, [pathname]);
   return null;
 };
+
 
 function App() {
   const [session, setSession] = useState(null);
