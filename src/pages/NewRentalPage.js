@@ -4,10 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
-import SignatureCanvas from 'react-signature-canvas';
-import { jsPDF } from 'jspdf'; // <-- Make sure to run: npm install jspdf
+import SignatureCanvas from 'react-signature-canvas'; // <-- Make sure to run: npm install jspdf
 import './NewRentalPage.css'; // You'll need to update this CSS for the new fields
-import { iskoolaPotaBase64 } from '../components/IskoolaPothaFont.js';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+
 
 // Helper to convert signature to a file
 function dataURLtoFile(dataurl, filename) {
@@ -24,6 +25,7 @@ const NewRentalPage = () => {
   const { carId } = useParams(); 
   const navigate = useNavigate(); 
   const sigPad = useRef(null);
+  const agreementBoxRef = useRef(null);
 
   // --- Main State ---
   const [step, setStep] = useState(1); // Controls the wizard step
@@ -146,154 +148,109 @@ const NewRentalPage = () => {
     console.error("FORM ERROR:", message);
     window.scrollTo(0, 0); // Scroll to top to show the error
   };
-  
-  // --- PDF Generation Function (Complete, Structured Version) ---
-  const generateAgreementPDF = () => {
-    const doc = new jsPDF('p', 'pt', 'a4'); // Use A4 paper size for better spacing
-    const signatureImage = sigPad.current.toDataURL('image/png');
-    const totalCost = (formData.rentalDays * (car.daily_rate || 0)).toFixed(2);
-    
-    const pageMargin = 40;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const textWidth = pageWidth - (pageMargin * 2);
-    let yPos = 60; // Start Y position
 
-    // --- Helper for Titles ---
-    const addSectionTitle = (title) => {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.text(title, pageMargin, yPos);
-      yPos += 20;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-    };
 
-    // --- Helper for Key-Value Pairs ---
-    const addDetail = (label, value) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(label, pageMargin, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text(value, pageMargin + 120, yPos); // Indent the value
-      yPos += 18;
-    };
-    
-    // --- Helper for Text Paragraphs ---
-    const addParagraph = (text) => {
-      const lines = doc.splitTextToSize(text, textWidth);
-      doc.text(lines, pageMargin, yPos);
-      yPos += (lines.length * 12) + 6; // line height + padding
-    };
-    
-    // --- 1. ADD SINHALA FONT ---
-    try {
-      if (iskoolaPotaBase64) {
-        doc.addFileToVFS('IskoolaPota.ttf', iskoolaPotaBase64);
-        doc.addFont('IskoolaPota.ttf', 'IskoolaPota', 'normal');
-        console.log("Sinhala font added successfully.");
-      } else {
-        console.warn("Sinhala font base64 string is missing.");
-      }
-    } catch (e) {
-      console.error("Error adding Sinhala font:", e);
-    }
-    
-    // --- 2. DOCUMENT TITLE ---
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text("Rental Agreement", pageWidth / 2, yPos, { align: 'center' });
-    yPos += 20;
-    // Set font to Sinhala for the title
-    if (iskoolaPotaBase64) doc.setFont('IskoolaPota'); 
-    doc.setFontSize(16);
-    doc.text("කුලී ගිවිසුම", pageWidth / 2, yPos, { align: 'center' });
-    yPos += 30;
-    
-    // Reset to default font
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    
-    // --- 3. RENTAL DETAILS ---
-    addSectionTitle("Rental Details");
-    addDetail("Customer Name:", formData.customerName);
-    addDetail("Customer ID (NIC):", formData.customerID);
-    addDetail("Customer Phone:", formData.customerPhone);
-    addDetail("Vehicle:", `${car.name} (${car.plate_number})`);
-    addDetail("Start Mileage:", `${formData.startMileage} km`);
-    addDetail("Rental Period:", `${formData.rentalDays} days`);
-    addDetail("Total Cost:", `LKR ${totalCost}`);
-    addDetail("Advance Paid:", `LKR ${formData.advancePayment || 0}`);
-    yPos += 20; // Extra space
+  const generateAgreementPDF = async () => {
+  const original = agreementBoxRef.current;
+  const signatureCanvas = sigPad.current?.getCanvas();
 
-    // --- 4. TERMS & CONDITIONS (ENGLISH) ---
-    addSectionTitle("Terms & Conditions");
-    const englishTerms = [
-      `1. I, ${formData.customerName}, agree to rent the vehicle ${car.name} for the period and cost specified.`,
-      "2. I confirm I have inspected the vehicle, its keys, and documents, and receive it in good, drivable condition.",
-      "3. I am responsible for a security deposit. Any damage or repair costs will be deducted. If costs exceed the deposit, I agree to pay the difference.",
-      "4. The daily rate includes a maximum km limit. I agree to pay an extra fee for each km over this limit.",
-      "5. I will be charged a late fee for every hour the vehicle is returned past the agreed-upon time.",
-      "6. I am fully responsible for any accident damage if the insurance company denies the claim.",
-      "7. If the vehicle requires garage repair due to my fault, I agree to pay a daily 'loss of income' fee to the owner.",
-      "8. I am 100% responsible for all traffic violations, accidents, and any illegal activities.",
-      "9. I agree to pay a daily fee if the vehicle is impounded by police for any reason.",
-      "10. I confirm I have checked the vehicle's oil, coolant, and tire pressure and am liable for neglect.",
-      "11. The vehicle must be returned clean (interior and exterior) or a cleaning fee will be charged.",
-      "12. PROHIBITED: Driving under the influence, all illegal activities, letting unlicensed/underage/inexperienced persons drive, sub-leasing, or selling the vehicle."
-    ];
-    englishTerms.forEach(addParagraph);
-    yPos += 20;
-    
-    // --- Check for New Page ---
-    if (yPos > 700) { // Check if we're near the bottom
-      doc.addPage();
-      yPos = pageMargin;
-    }
+  if (!original) throw new Error("Agreement box missing");
+  if (!signatureCanvas) throw new Error("Signature missing");
 
-    // --- 5. TERMS & CONDITIONS (SINHALA) ---
-    // SET FONT TO SINHALA
-    if (iskoolaPotaBase64) doc.setFont('IskoolaPota'); 
-    doc.setFontSize(14);
-    doc.text("නියමයන් සහ කොන්දේසි", pageMargin, yPos);
-    yPos += 20;
-    doc.setFontSize(10);
+  // Wait for Sinhala fonts
+  if (document.fonts?.ready) await document.fonts.ready;
 
-    const sinhalaTerms = [
-      "1. වාහනය පරීක්ෂා කිරීම: වාහනය, යතුරු සහ ලියකියවිලි පරීක්ෂා කර, හොඳ ධාවන තත්වයෙන් භාරගත් බවට මම එකඟ වෙමි.",
-      "2. තැන්පතු මුදල: වාහනයේ හානි සඳහා තැන්පතු මුදලින් අඩුකරන අතර, එය ප්‍රමාණවත් නොවන්නේ නම් ඉතිරි මුදල ගෙවීමට මම එකඟ වෙමි.",
-      "3. අමතර ගාස්තු: නියමිත කිලෝමීටර් සීමාව ඉක්මවූ විට, එක් එක් අමතර කිලෝමීටරය සඳහා ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.",
-      "4. ප්‍රමාද ගාස්තු: නියමිත වේලාවට වාහනය භාර දීමට නොහැකි වුවහොත්, ප්‍රමාද වන සෑම පැයකටම අමතර ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.",
-      "5. රක්ෂණ: රක්ෂණ සමාගම අලාභ ගෙවීම ප්‍රතික්ෂේප කළහොත්, සම්පූර්ණ අලාභය ගෙවීමට මම වගකිව යුතුය.",
-      "6. ගරාජ් ගාස්තු: මගේ වරදක් නිසා සිදුවන අනතුරකදී, වාහනය ගරාජයේ තබන දින ගණන සඳහා දෛනික පාඩු ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.",
-      "7. වගකීම: සියලුම මාර්ග නීති කඩකිරීම්, අනතුරු සහ නීති විරෝධී ක්‍රියා සඳහා සම්පූර්ණ වගකීම මම දරමි.",
-      "8. පොලිස් භාරය: මගේ භාවිතය හේතුවෙන් වාහනය පොලිස් භාරයට පත්වුවහොTත්, ඒ දින ගණන සඳහා දෛනික අලාභයක් ගෙවීමට මම එකඟ වෙමි.",
-      "9. නඩත්තුව: වාහනයේ එන්ජින් ඔයිල්, කූලන්ට් සහ ටයර් පීඩනය මා විසින් පරීක්ෂා කළ බවත්, එසේ නොකිරීමෙන් සිදුවන හානියට මා වගකිව යුතු බවත් සහතික කරමි.",
-      "10. පිරිසිදු කිරීම: වාහනය ආපසු භාර දීමේදී ඇතුළත හා පිටත පිරිසිදු කර භාර දිය යුතු අතර, එසේ නොමැති නම් පිරිසිදු කිරීමේ ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.",
-      "11. තහනම්: මත්පැන් පානය කර රිය පැදවීම, නීති විරෝධී කටයුතු, බලපත්‍ර රහිත/නුපුහුණු අයට පැදවීමට දීම, සහ වෙනත් අයට කුලියට දීම සපුරා තහනම්."
-    ];
-    sinhalaTerms.forEach(addParagraph);
+  // ----------------------------------------------------
+  // 1. CLONE AGREEMENT BOX (keeps UI untouched)
+  // ----------------------------------------------------
+  const clone = original.cloneNode(true);
 
-    // --- 6. SIGNATURE ---
-    // Reset to default font
-    doc.setFont('helvetica', 'normal');
-    yPos += 30;
-    
-    // Check for New Page again
-    if (yPos > 740) {
-      doc.addPage();
-      yPos = pageMargin;
-    }
-    
-    doc.text("Customer Signature / පාරිභෝගික අත්සන:", pageMargin, yPos);
-    yPos += 10;
-    doc.addImage(signatureImage, 'PNG', pageMargin, yPos, 180, 60); // Add signature
-    doc.line(pageMargin, yPos + 70, pageMargin + 200, yPos + 70); // Add signature line
-    doc.text(formData.customerName, pageMargin, yPos + 85);
+  // Force full height, no scroll
+  clone.style.maxHeight = "none";
+  clone.style.height = "auto";
+  clone.style.overflow = "visible";
 
-    // --- 7. FINAL OUTPUT ---
-    const pdfBlob = doc.output('blob');
-    // THIS IS THE CORRECTED LINE:
-    return new File([pdfBlob], `agreement-${formData.customerID}-${uuidv4()}.pdf`, { type: 'application/pdf' });
-  };
+  // ----------------------------------------------------
+  // 2. Insert signature INSIDE the cloned agreement
+  // ----------------------------------------------------
+  const sigWrapper = document.createElement("div");
+  sigWrapper.style.marginTop = "20px";
+
+  const label = document.createElement("div");
+  label.textContent = "Customer Signature / පාරිභෝගික අත්සන:";
+  label.style.fontSize = "14px";
+  label.style.fontWeight = "bold";
+  sigWrapper.appendChild(label);
+
+  const sigImg = document.createElement("img");
+  sigImg.src = signatureCanvas.toDataURL();
+  sigImg.style.width = "260px";
+  sigImg.style.height = "auto";
+  sigWrapper.appendChild(sigImg);
+
+  const customer = document.createElement("div");
+  customer.textContent = formData.customerName;
+  customer.style.marginTop = "10px";
+  sigWrapper.appendChild(customer);
+
+  clone.appendChild(sigWrapper);
+
+  // ----------------------------------------------------
+  // 3. RENDER CLONE OFFSCREEN
+  // ----------------------------------------------------
+  const container = document.createElement("div");
+  container.style.position = "absolute";
+  container.style.left = "-99999px";
+  container.style.top = "0";
+  container.appendChild(clone);
+  document.body.appendChild(container);
+
+  // Wait for rendering
+  await new Promise(r => setTimeout(r, 50));
+
+  // ----------------------------------------------------
+  // 4. CAPTURE FULL HEIGHT HTML (not clipped)
+  // ----------------------------------------------------
+  const canvas = await html2canvas(clone, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: "#ffffff",
+  });
+
+  document.body.removeChild(container);
+
+  // ----------------------------------------------------
+  // 5. BUILD MULTI-PAGE PDF
+  // ----------------------------------------------------
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF("p", "pt", "a4");
+  const pageWidth = pdf.internal.pageSize.width;
+  const imgProps = pdf.getImageProperties(imgData);
+  const pdfWidth = pageWidth;
+  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+  let heightLeft = pdfHeight;
+  let position = 0;
+
+  pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+  heightLeft -= pdf.internal.pageSize.height;
+
+  while (heightLeft > 0) {
+    pdf.addPage();
+    position -= pdf.internal.pageSize.height;
+    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+    heightLeft -= pdf.internal.pageSize.height;
+  }
+
+  return new File(
+    [pdf.output("blob")],
+    `agreement-${formData.customerID}-${uuidv4()}.pdf`,
+    { type: "application/pdf" }
+  );
+};
+
+
+
 
 
   // --- Main Submission Function ---
@@ -351,7 +308,7 @@ const NewRentalPage = () => {
       
       // --- 3. Generate and upload PDF ---
       console.log("Generating PDF...");
-      const agreementFile = generateAgreementPDF();
+      const agreementFile = await generateAgreementPDF();
       const agreementPdfURL = await uploadFile(agreementFile, 'agreements');
       console.log("PDF uploaded:", agreementPdfURL);
 
@@ -522,12 +479,19 @@ const NewRentalPage = () => {
     <div className="form-step-container">
       <h2>Step 3: Agreement & Confirmation</h2>
       
-      <div className="agreement-box" style={{border: '1px solid #ccc', padding: '15px', borderRadius: '8px', background: '#fafafa'}}>
-        <h3>Terms and Conditions</h3>
-        <p>Please review the details and sign below.</p>
+      {/* --- THIS IS THE PART WE ARE SCREENSHOTTING --- */}
+      <div 
+        ref={agreementBoxRef} // The 'ref' for html2canvas
+        className="agreement-box" 
+        style={{border: '1px solid #ccc', padding: '15px', borderRadius: '8px', background: '#fafafa'}}
+      >
         
-        {/* Summary of details */}
-        <div className="summary" style={{background: '#fff', padding: '10px', borderRadius: '5px', marginBottom: '15px'}}>
+        <h3 style={{textAlign: 'center'}}>Terms and Conditions / නියමයන් සහ කොන්දේසි:</h3>
+        
+        <p>Please review the details below. By signing, you agree to all terms.</p>
+        
+        {/* --- Summary of details --- */}
+        <div className="summary" style={{background: '#fff', padding: '10px', borderRadius: '5px', marginBottom: '15px', border: '1px solid #eee'}}>
           <strong>Customer:</strong> {formData.customerName} ({formData.customerID})<br />
           <strong>Vehicle:</strong> {car.name} ({car.plate_number})<br />
           <strong>Period:</strong> {formData.rentalDays} days<br />
@@ -535,14 +499,14 @@ const NewRentalPage = () => {
           <strong>Advance:</strong> LKR {formData.advancePayment || 0}
         </div>
         
-        <p><strong>Terms and Conditions / නියමයන් සහ කොන්දේසි:</strong></p>
+        <p><strong>Terms:</strong></p>
         
         {/* --- ENGLISH TERMS --- */}
         <div style={{textAlign: 'left', paddingLeft: '20px', marginBottom: '15px'}}>
-          <strong>In English:</strong>
+          <strong style={{fontSize: '14px'}}>In English:</strong>
           <ol style={{fontSize: '12px', paddingLeft: '20px'}}>
             <li>I, {formData.customerName}, agree to rent the vehicle {car.name} for the period and cost specified.</li>
-            <li>I confirm I have inspected the vehicle, its keys, and documents, and receive it in good, drivable condition.</li> {/* <-- ADDED POINT */}
+            <li>I confirm I have inspected the vehicle, its keys, and documents, and receive it in good, drivable condition.</li>
             <li>I am responsible for a security deposit. Any damage or repair costs will be deducted. If costs exceed the deposit, I agree to pay the difference.</li>
             <li>The daily rate includes a maximum km limit. I agree to pay an extra fee for each km over this limit.</li>
             <li>I will be charged a late fee for every hour the vehicle is returned past the agreed-upon time.</li>
@@ -558,9 +522,9 @@ const NewRentalPage = () => {
 
         {/* --- SINHALA TERMS --- */}
         <div style={{textAlign: 'left', paddingLeft: '20px', fontFamily: 'Arial, "Iskoola Pota", sans-serif'}}>
-          <strong>සිංහලෙන්:</strong>
+          <strong style={{fontSize: '14px'}}>සිංහලෙන්:</strong>
           <ol style={{fontSize: '12px', paddingLeft: '20px'}}>
-            <li>වාහනය පරීක්ෂා කිරීම: වාහනය, යතුරු සහ ලියකියවිලි පරීක්ෂා කර, හොඳ ධාවන තත්වයෙන් භාරගත් බවට මම එකඟ වෙමි.</li> {/* <-- ADDED POINT */}
+            <li>වාහනය පරීක්ෂා කිරීම: වාහනය, යතුරු සහ ලියකියවිලි පරීක්ෂා කර, හොඳ ධාවන තත්වයෙන් භාරගත් බවට මම එකඟ වෙමි.</li>
             <li>තැන්පතු මුදල: වාහනයේ හානි සඳහා තැන්පතු මුදලින් අඩුකරන අතර, එය ප්‍රමාණවත් නොවන්නේ නම් ඉතිරි මුදල ගෙවීමට මම එකඟ වෙමි.</li>
             <li>අමතර ගාස්තු: නියමිත කිලෝමීටර් සීමාව ඉක්මවූ විට, එක් එක් අමතර කිලෝමීටරය සඳහා ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.</li>
             <li>ප්‍රමාද ගාස්තු: නියමිත වේලාවට වාහනය භාර දීමට නොහැකි වුවහොත්, ප්‍රමාද වන සෑම පැයකටම අමතර ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.</li>
@@ -574,6 +538,7 @@ const NewRentalPage = () => {
           </ol>
         </div>
       </div>
+      {/* --- END OF SCREENSHOT AREA --- */}
 
       <label style={{marginTop: '20px', display: 'block', fontWeight: 'bold'}}>Customer Signature</label>
       <div className="signature-box" style={{border: '1px dashed #000', borderRadius: '8px', background: '#fff'}}>
