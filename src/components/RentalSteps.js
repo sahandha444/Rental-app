@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 
+// --- STEP 1: CUSTOMER DETAILS ---
 export const RentalStep1 = ({ formData, setFormData, car, pastCustomers, handleTextChange, handleFileChange, nextStep }) => {
   const [customerSearch, setCustomerSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -100,6 +101,7 @@ export const RentalStep1 = ({ formData, setFormData, car, pastCustomers, handleT
   );
 };
 
+// --- STEP 2: RENTAL DETAILS ---
 export const RentalStep2 = ({ formData, handleTextChange, handleFileChange, prevStep, nextStep, car, totalCost }) => {
   return (
     <div className="form-step-container">
@@ -136,14 +138,21 @@ export const RentalStep2 = ({ formData, handleTextChange, handleFileChange, prev
   );
 };
 
+// --- STEP 3: AGREEMENT (FULL TEXT RESTORED) ---
 export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadRef, clearSignature, prevStep, submitting }) => {
   return (
     <div className="form-step-container">
       <h2>Step 3: Agreement & Confirmation</h2>
-      <div ref={agreementBoxRef} className="agreement-box" style={{border: '1px solid #ccc', padding: '15px', borderRadius: '8px', background: '#fafafa'}}>
+      
+      <div 
+        ref={agreementBoxRef}
+        className="agreement-box" 
+        style={{border: '1px solid #ccc', padding: '15px', borderRadius: '8px', background: '#fafafa'}}
+      >
         <h3 style={{textAlign: 'center'}}>Terms and Conditions / නියමයන් සහ කොන්දේසි:</h3>
         <p>Please review the details below. By signing, you agree to all terms.</p>
         
+        {/* Summary Block */}
         <div className="summary" style={{background: '#fff', padding: '10px', borderRadius: '5px', marginBottom: '15px', border: '1px solid #eee'}}>
           <strong>Customer:</strong> {formData.customerName} ({formData.customerID})<br />
           <strong>Vehicle:</strong> {car.name} ({car.plate_number})<br />
@@ -152,34 +161,57 @@ export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadR
           <strong>Advance:</strong> LKR {formData.advancePayment || 0}
         </div>
         
-        {/* Shortened Terms for readability in code - assume full terms here */}
+        <p><strong>Terms:</strong></p>
+        
+        {/* --- ENGLISH TERMS (FULL) --- */}
         <div style={{textAlign: 'left', paddingLeft: '20px', marginBottom: '15px'}}>
-            <strong style={{fontSize: '16px'}}>In English:</strong>
-            <ol style={{fontSize: '14px', paddingLeft: '20px', lineHeight: '1.6'}}>
-                <li>I, {formData.customerName}, agree to rent {car.name} for the period specified.</li>
-                <li>I confirm I have inspected the vehicle, keys, and documents.</li>
-                <li>I agree to pay <strong>LKR {car.extra_km_price || '___'}</strong> for each extra km.</li>
-                <li>I agree to pay <strong>LKR {car.late_fee_per_hour || '___'}</strong> per late hour.</li>
-                <li>I am fully responsible for accidents, traffic violations, and illegal activities.</li>
-                <li>Vehicle must be returned clean and with same fluid levels.</li>
-            </ol>
+          <strong style={{fontSize: '16px'}}>In English:</strong>
+          <ol style={{fontSize: '14px', paddingLeft: '20px', lineHeight: '1.6'}}>
+            <li>I, {formData.customerName}, agree to rent the vehicle {car.name} for the period and cost specified.</li>
+            <li>I confirm I have inspected the vehicle, its keys, and documents, and receive it in good, drivable condition.</li>
+            <li>I am responsible for a security deposit. Any damage or repair costs will be deducted. If costs exceed the deposit, I agree to pay the difference.</li>
+            <li>The daily rate includes a maximum km limit. I agree to pay <strong>LKR {car.extra_km_price || '___'}</strong> for each km over this limit.</li>
+            <li>I will be charged a late fee of <strong>LKR {car.late_fee_per_hour || '___'}</strong> for every hour the vehicle is returned past the agreed-upon time.</li>
+            <li>I am fully responsible for any accident damage if the insurance company denies the claim.</li>
+            <li>If the vehicle requires garage repair due to my fault, I agree to pay a daily 'loss of income' fee to the owner.</li>
+            <li>I am 100% responsible for all traffic violations, accidents, and any illegal activities during the rental period.</li>
+            <li>I agree to pay a daily fee if the vehicle is impounded by police for any reason related to my use.</li>
+            <li>I confirm I have checked the vehicle's engine oil, coolant, and tire pressure and am liable for any damage from neglect.</li>
+            <li>The vehicle must be returned clean (interior and exterior) or a cleaning fee will be charged.</li>
+            <li style={{fontWeight: 'bold'}}>PROHIBITED: Driving under the influence, all illegal activities, letting unlicensed/underage/inexperienced persons drive, sub-leasing, or selling the vehicle.</li>
+          </ol>
         </div>
+
+        {/* --- SINHALA TERMS (FULL) --- */}
         <div style={{textAlign: 'left', paddingLeft: '20px', fontFamily: 'Arial, "Iskoola Pota", sans-serif'}}>
           <strong style={{fontSize: '16px'}}>සිංහලෙන්:</strong>
           <ol style={{fontSize: '14px', paddingLeft: '20px', lineHeight: '1.6'}}>
-            <li>වාහනය පරීක්ෂා කර භාරගත් බවට මම එකඟ වෙමි.</li>
-            <li>අමතර කිලෝමීටරයක් සඳහා <strong>රු. {car.extra_km_price || '___'}</strong> ක් ගෙවමි.</li>
-            <li>ප්‍රමාද වන සෑම පැයකටම <strong>රු. {car.late_fee_per_hour || '___'}</strong> ක් ගෙවමි.</li>
-            <li>සියලුම අනතුරු සහ නීති විරෝධී ක්‍රියා සඳහා මම වගකිව යුතුය.</li>
+            <li>වාහනය පරීක්ෂා කිරීම: වාහනය, යතුරු සහ ලියකියවිලි පරීක්ෂා කර, හොඳ ධාවන තත්වයෙන් භාරගත් බවට මම එකඟ වෙමි.</li>
+            <li>තැන්පතු මුදල: වාහනයේ හානි සඳහා තැන්පතු මුදලින් අඩුකරන අතර, එය ප්‍රමාණවත් නොවන්නේ නම් ඉතිරි මුදල ගෙවීමට මම එකඟ වෙමි.</li>
+            <li>අමතර ගාස්තු: නියමිත කිලෝමීටර් සීමාව ඉක්මවූ විට, එක් එක් අමතර කිලෝමීටරය සඳහා <strong>රු. {car.extra_km_price || '___'}</strong> ක මුදලක් ගෙවීමට මම එකඟ වෙමි.</li>
+            <li>ප්‍රමාද ගාස්තු: නියමිත වේලාවට වාහනය භාර දීමට නොහැකි වුවහොත්, ප්‍රමාද වන සෑම පැයකටම <strong>රු. {car.late_fee_per_hour || '___'}</strong> ක අමතර මුදලක් ගෙවීමට මම එකඟ වෙමි.</li>
+            <li>රක්ෂණ: රක්ෂණ සමාගම අලාභ ගෙවීම ප්‍රතික්ෂේප කළහොත්, සම්පූර්ණ අලාභය ගෙවීමට මම වගකිව යුතුය.</li>
+            <li>ගරාජ් ගාස්තු: මගේ වරදක් නිසා සිදුවන අනතුරකදී, වාහනය ගරාජයේ තබන දින ගණන සඳහා දෛනික පාඩු ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.</li>
+            <li>වගකීම: සියලුම මාර්ග නීති කඩකිරීම්, අනතුරු සහ නීති විරෝධී ක්‍රියා සඳහා සම්පූර්ණ වගකීම මම දරමි.</li>
+            <li>පොලිස් භාරය: මගේ භාවිතය හේතුවෙන් වාහනය පොලිස් භාරයට පත්වුවහොත්, ඒ දින ගණන සඳහා දෛනික අලාභයක් ගෙවීමට මම එකඟ වෙමි.</li>
+            <li>නඩත්තුව: වාහනයේ එන්ජින් ඔයිල්, කූලන්ට් සහ ටයර් පීඩනය මා විසින් පරීක්ෂා කළ බවත්, එසේ නොකිරීමෙන් සිදුවන හානියට මා වගකිව යුතු බවත් සහතික කරමි.</li>
+            <li>පිරිසිදු කිරීම: වාහනය ආපසු භාර දීමේදී ඇතුළත හා පිටත පිරිසිදු කර භාර දිය යුතු අතර, එසේ නොමැති නම් පිරිසිදු කිරීමේ ගාස්තුවක් ගෙවීමට මම එකඟ වෙමි.</li>
+            <li style={{fontWeight: 'bold'}}>තහනම්: මත්පැන් පානය කර රිය පැදවීම, නීති විරෝධී කටයුතු, බලපත්‍ර රහිත/නුපුහුණු අයට පැදවීමට දීම, සහ වෙනත් අයට කුලියට දීම සපුරා තහනම්.</li>
           </ol>
         </div>
       </div>
 
       <label style={{marginTop: '20px', display: 'block', fontWeight: 'bold'}}>Customer Signature</label>
       <div className="signature-box" style={{border: '1px dashed #000', borderRadius: '8px', background: '#fff'}}>
-        <SignatureCanvas ref={sigPadRef} penColor='black' canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '150px'} }} />
+        <SignatureCanvas 
+          ref={sigPadRef}
+          penColor='black'
+          canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '150px'} }} 
+        />
       </div>
-      <button type="button" className="clear-button" onClick={clearSignature} style={{marginTop: '10px'}}>Clear Signature</button>
+      <button type="button" className="clear-button" onClick={clearSignature} style={{marginTop: '10px'}}>
+        Clear Signature
+      </button>
 
       <div className="form-navigation" style={{display: 'flex', justifyContent: 'space-between', marginTop: '20px'}}>
         <button type="button" className="clear-button" onClick={prevStep}>Back</button>

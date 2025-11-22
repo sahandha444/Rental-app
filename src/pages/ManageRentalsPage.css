@@ -11,6 +11,7 @@
   font-weight: 500;
   margin-left: 8px; /* Space between buttons */
   display: inline-block;
+  font-style: italic;
 }
 
 .view-pdf-button:hover {
