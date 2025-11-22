@@ -1,208 +1,214 @@
 // File: src/components/ReturnRentalModal.js
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import SignatureCanvas from 'react-signature-canvas';
-import { jsPDF } from 'jspdf';
+import { generateInvoicePDF } from '../utils/InvoiceGenerator'; // <-- Import your new file
 import { v4 as uuidv4 } from 'uuid';
-
-// Helper to convert signature to file
-function dataURLtoFile(dataurl, filename) {
-  var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-      bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-  while(n--){
-      u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new File([u8arr], filename, {type:mime});
-}
+import './ReturnRentalModal.css'; // You can create a simple CSS file for this
 
 const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
+  const [loading, setLoading] = useState(false);
+  
+  // Form State
+  const [returnDate, setReturnDate] = useState(new Date().toISOString().split('T')[0]);
   const [endMileage, setEndMileage] = useState('');
-  const [returnDate] = useState(new Date()); // Auto-set to now
-  const [submitting, setSubmitting] = useState(false);
-  const sigPad = useRef(null);
+  const [damageCost, setDamageCost] = useState(0);
+  const [remarks, setRemarks] = useState('');
 
-  // --- Calculations ---
-  const startMileage = rental.start_mileage || 0;
-  const allowedMileage = rental.rental_days * 100; // Example: 100km per day limit
-  const distanceDriven = endMileage ? parseFloat(endMileage) - startMileage : 0;
-  const extraKm = Math.max(0, distanceDriven - allowedMileage);
-  const extraCost = extraKm * (car?.extra_mileage_rate || 0);
-  // Simple calculation: (Days * Rate) + Extra Mileage Cost - Advance
-  const baseCost = rental.rental_days * (car?.daily_rate || 0);
-  const totalCost = baseCost + extraCost;
-  const finalBalance = totalCost - (rental.advance_payment || 0);
+  // Calculated State
+  const [calculations, setCalculations] = useState({
+    extraKm: 0,
+    extraKmCost: 0,
+    lateHours: 0,
+    lateFeeCost: 0,
+    totalDue: 0
+  });
 
-  // --- Generate Invoice PDF ---
-  const generateInvoicePDF = () => {
-    const doc = new jsPDF();
-    const signatureImage = sigPad.current.toDataURL('image/png');
+  // --- 1. Real-time Calculations ---
+  useEffect(() => {
+    if (!rental || !car) return;
 
-    doc.setFontSize(20);
-    doc.text("FINAL INVOICE", 105, 20, { align: 'center' });
+    // A. Mileage Calc
+    const startMil = parseFloat(rental.start_mileage) || 0;
+    const endMil = parseFloat(endMileage) || startMil;
+    const driven = endMil - startMil;
+    const allowedKm = (rental.rental_days * (car.km_limit_per_day || 100)); // Default 100 if null
     
-    doc.setFontSize(12);
-    doc.text(`Invoice #: INV-${rental.id}`, 20, 40);
-    doc.text(`Date: ${returnDate.toLocaleString()}`, 20, 50);
-    doc.text(`Customer: ${rental.customer_name}`, 20, 60);
-    
-    doc.text("--- Vehicle Return Details ---", 20, 80);
-    doc.text(`Car: ${rental.car_name}`, 20, 90);
-    doc.text(`Start Mileage: ${startMileage} km`, 20, 100);
-    doc.text(`End Mileage: ${endMileage} km`, 20, 110);
-    doc.text(`Total Distance: ${distanceDriven} km`, 20, 120);
-    
-    doc.text("--- Cost Breakdown ---", 20, 140);
-    doc.text(`Base Rental (${rental.rental_days} days): LKR ${baseCost.toFixed(2)}`, 20, 150);
-    doc.text(`Extra Mileage (${extraKm} km @ ${car.extra_mileage_rate}/km): LKR ${extraCost.toFixed(2)}`, 20, 160);
-    doc.text(`Subtotal: LKR ${totalCost.toFixed(2)}`, 20, 170);
-    doc.text(`Less Advance: - LKR ${rental.advance_payment.toFixed(2)}`, 20, 180);
-    
-    doc.setFontSize(16);
-    doc.text(`FINAL BALANCE DUE: LKR ${finalBalance.toFixed(2)}`, 20, 200);
-    
-    doc.setFontSize(12);
-    doc.text("Customer Signature (Return Confirmation):", 20, 220);
-    doc.addImage(signatureImage, 'PNG', 20, 225, 80, 25);
-
-    const pdfBlob = doc.output('blob');
-    return new File([pdfBlob], `invoice-${rental.id}.pdf`, { type: 'application/pdf' });
-  };
-
-  const handleReturn = async () => {
-    if (!endMileage || sigPad.current.isEmpty()) {
-      alert("Please enter end mileage and sign.");
-      return;
+    let extraKm = 0;
+    if (driven > allowedKm) {
+      extraKm = driven - allowedKm;
     }
-    if (parseFloat(endMileage) < startMileage) {
-      alert("End mileage cannot be less than start mileage.");
-      return;
-    }
+    const extraKmCost = extraKm * (car.extra_km_price || 0);
 
-    setSubmitting(true);
+    // B. Time/Late Fee Calc
+    // Logic: Compare Selected Return Date vs Expected End Date
+    // For simplicity, this example calculates manual late hours if needed, 
+    // or we can just automate it based on dates. 
+    // Let's assume 0 late hours for now unless you add a 'Late Hours' input, 
+    // OR calculate based on dates:
+    const expectedEnd = new Date(rental.rental_start_date);
+    expectedEnd.setDate(expectedEnd.getDate() + rental.rental_days);
+    const actualReturn = new Date(returnDate);
+    
+    // Calculate difference in hours (rough estimate)
+    let lateHours = 0;
+    const diffTime = actualReturn - expectedEnd;
+    if (diffTime > 0) {
+      lateHours = Math.ceil(diffTime / (1000 * 60 * 60)); 
+      // If it's just 1 day late, it might show 24 hours. Adjust logic as needed.
+    }
+    const lateFeeCost = lateHours * (car.late_fee_per_hour || 0);
+
+    // C. Final Total
+    // Base Rental Cost was already agreed. We only add extras here.
+    // Total = (Base Cost) + (Extra Km) + (Late Fee) + (Damages) - (Advance)
+    const baseCost = rental.rental_days * (car.daily_rate || 0);
+    const subTotal = baseCost + extraKmCost + lateFeeCost + parseFloat(damageCost);
+    const finalDue = subTotal - (rental.advance_payment || 0);
+
+    setCalculations({
+      extraKm,
+      extraKmCost,
+      lateHours,
+      lateFeeCost,
+      totalDue: finalDue
+    });
+
+  }, [endMileage, returnDate, damageCost, rental, car]);
+
+
+  // --- 2. Handle Submit ---
+  const handleConfirmReturn = async () => {
+    if (!endMileage) return alert("Please enter ending mileage");
+    
+    setLoading(true);
     try {
-      // 1. Upload Signature
-      const signatureFile = dataURLtoFile(sigPad.current.toDataURL('image/png'), `return-sig-${uuidv4()}.png`);
-      const { data: sigData, error: sigError } = await supabase.storage
-        .from('photos') // Using your existing bucket
-        .upload(`signatures/${signatureFile.name}`, signatureFile);
-      if (sigError) throw sigError;
-      const sigUrl = supabase.storage.from('photos').getPublicUrl(`signatures/${signatureFile.name}`).data.publicUrl;
+      // A. Generate Invoice PDF
+      const returnData = {
+        returnDate,
+        endMileage,
+        extraKm: calculations.extraKm,
+        lateHours: calculations.lateHours,
+        damageCost: parseFloat(damageCost),
+        finalTotal: calculations.totalDue
+      };
 
-      // 2. Upload Invoice PDF
-      const invoiceFile = generateInvoicePDF();
-      const { error: pdfError } = await supabase.storage
-        .from('photos')
-        .upload(`agreements/${invoiceFile.name}`, invoiceFile); // Reusing agreements folder
-      if (pdfError) throw pdfError;
-      const invoiceUrl = supabase.storage.from('photos').getPublicUrl(`agreements/${invoiceFile.name}`).data.publicUrl;
+      console.log("Generating Invoice...");
+      const invoiceFile = await generateInvoicePDF(rental, car, returnData);
       
-      // 3. Create Short Link for Invoice (Securely via Function, like before)
-      // We'll use the same logic: pass the long URL to the SMS function
+      // B. Upload Invoice
+      const fileName = `invoice-${rental.id}-${uuidv4()}.pdf`;
+      const { error: uploadError } = await supabase.storage
+        .from('invoices') // Make sure you create this bucket!
+        .upload(fileName, invoiceFile);
 
-      // 4. Update Rental Record
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage
+        .from('invoices')
+        .getPublicUrl(fileName);
+
+      // C. Update Rental Record (Close it)
       const { error: updateError } = await supabase
         .from('rentals')
         .update({
           status: 'completed',
           return_date: returnDate,
-          end_mileage: parseFloat(endMileage),
-          extra_mileage_cost: extraCost,
-          final_total_cost: finalBalance,
-          return_signature_url: sigUrl,
-          invoice_pdf_url: invoiceUrl
+          end_mileage: endMileage,
+          final_total_cost: calculations.totalDue,
+          return_invoice_pdf_url: publicUrlData.publicUrl,
+          remarks_return: remarks
         })
         .eq('id', rental.id);
+
       if (updateError) throw updateError;
 
-      // 5. Mark Car Available
-      await supabase.from('vehicles').update({ status: 'Available', current_mileage: parseFloat(endMileage) }).eq('id', rental.car_id);
+      // D. Update Car Status (Free it up)
+      const { error: carError } = await supabase
+        .from('vehicles')
+        .update({ 
+          status: 'Available',
+          current_mileage: endMileage // Update car's mileage
+        })
+        .eq('id', car.id);
 
-      // 6. Create Short Link & Send SMS
-      // We re-use your 'send-local-sms' function!
-      // We just need to format the message slightly differently in the function,
-      // OR we can make the function generic.
-      // For now, let's send the invoice URL as the 'shortLink' payload.
-      
-      // We need to manually create the short link here because we want to store it? 
-      // Actually, your `send-local-sms` function handles creation.
-      // We'll just call it.
-      
-      // Wait... your `send-local-sms` function creates a short link for `agreementUrl`.
-      // Let's assume we can use it for `invoiceUrl` too if we pass it as `agreementUrl` (or update the function to be generic).
-      // Let's update the SMS function call to pass the invoice URL.
-      
-      const appUrl = window.location.origin; 
-      const shortId = Math.random().toString(36).substring(2, 8);
-      const newShortLink = { id: shortId, long_url: invoiceUrl };
-      
-      // Create short link in DB first (since we moved logic to client in one version, check your latest implementation)
-      // Wait, the LATEST implementation moved logic to the SERVER function. 
-      // So we just send the LONG URL to the function.
-      
-      await supabase.functions.invoke('send-local-sms', {
-        body: { 
-          customerPhone: rental.customer_phone,
-          customerName: rental.customer_name,
-          agreementUrl: invoiceUrl, // Using this parameter name so we don't have to change the Edge Function code!
-          // (Ideally, rename 'agreementUrl' to 'documentUrl' in the function later)
-          type: 'invoice' // Optional flag if you want to change message text in future
-        }
-      });
+      if (carError) throw carError;
 
-      alert("Vehicle returned successfully! Invoice sent.");
-      onSuccess(); // Refresh parent list
+      // Success!
+      onSuccess();
 
     } catch (error) {
-      console.error("Return failed:", error);
-      alert("Error processing return: " + error.message);
+      console.error("Error returning vehicle:", error);
+      alert("Error: " + error.message);
     } finally {
-      setSubmitting(false);
-      onClose();
+      setLoading(false);
     }
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-content" style={{maxWidth: '600px', textAlign: 'left'}}>
-        <h2>Return Vehicle: {rental.car_name}</h2>
-        <p className="text-muted">Customer: {rental.customer_name}</p>
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>Return Vehicle: {car.name}</h2>
         
-        <div className="form-group" style={{marginBottom: '1rem'}}>
-          <label>Return Date:</label>
-          <input type="text" className="form-input" value={returnDate.toLocaleString()} disabled />
-        </div>
-
-        <div className="form-group" style={{marginBottom: '1rem'}}>
-          <label>End Mileage (Start: {startMileage} km):</label>
+        <div className="form-group">
+          <label>Return Date</label>
           <input 
-            type="number" 
-            className="form-input" 
-            value={endMileage} 
-            onChange={(e) => setEndMileage(e.target.value)} 
-            placeholder="Enter current odometer reading"
+            type="date" 
+            value={returnDate} 
+            onChange={(e) => setReturnDate(e.target.value)} 
           />
         </div>
 
-        {/* Calculation Display */}
-        <div className="cost-display" style={{padding: '1rem', fontSize: '0.9rem'}}>
-          <p>Distance: {distanceDriven} km {extraKm > 0 && <span className="text-danger">({extraKm} km over limit)</span>}</p>
-          <p>Extra Mileage Cost: LKR {extraCost.toFixed(2)}</p>
-          <h3>Balance to Pay: LKR {finalBalance.toFixed(2)}</h3>
+        <div className="form-group">
+          <label>End Mileage (Start: {rental.start_mileage})</label>
+          <input 
+            type="number" 
+            value={endMileage} 
+            onChange={(e) => setEndMileage(e.target.value)} 
+            placeholder="Enter current km"
+          />
         </div>
 
-        <label style={{marginTop: '1rem', display: 'block'}}>Customer Signature (Confirm Return):</label>
-        <div className="signature-box" style={{height: '150px'}}>
-          <SignatureCanvas ref={sigPad} penColor='black' canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '100%'} }} />
+        <div className="form-group">
+          <label>Damages / Repair Cost (LKR)</label>
+          <input 
+            type="number" 
+            value={damageCost} 
+            onChange={(e) => setDamageCost(e.target.value)} 
+          />
         </div>
-        <button type="button" className="clear-button" onClick={() => sigPad.current.clear()} style={{marginTop: '5px', padding: '5px 10px', fontSize: '0.8rem'}}>Clear</button>
 
-        <div className="modal-actions">
-          <button className="modal-button cancel" onClick={onClose} disabled={submitting}>Cancel</button>
-          <button className="modal-button confirm" onClick={handleReturn} disabled={submitting}>
-            {submitting ? 'Processing...' : 'Confirm Return & Send Invoice'}
+        <div className="form-group">
+          <label>Remarks</label>
+          <textarea 
+            value={remarks} 
+            onChange={(e) => setRemarks(e.target.value)} 
+          />
+        </div>
+
+        {/* --- COST SUMMARY --- */}
+        <div className="summary-box" style={{background: '#f9f9f9', padding: '15px', borderRadius: '8px', marginTop: '10px'}}>
+          <p><strong>Extra Km:</strong> {calculations.extraKm} km (+ LKR {calculations.extraKmCost.toFixed(2)})</p>
+          <p><strong>Late Hours:</strong> {calculations.lateHours} hrs (+ LKR {calculations.lateFeeCost.toFixed(2)})</p>
+          <p><strong>Base Rental:</strong> LKR {(rental.rental_days * car.daily_rate).toFixed(2)}</p>
+          <p><strong>Less Advance:</strong> - LKR {rental.advance_payment}</p>
+          <h3 style={{borderTop: '1px solid #ccc', paddingTop: '10px', marginTop: '10px'}}>
+            Final Balance Due: LKR {calculations.totalDue.toFixed(2)}
+          </h3>
+        </div>
+
+        <div className="modal-actions" style={{marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+          <button onClick={onClose} className="cancel-btn">Cancel</button>
+          <button 
+            onClick={handleConfirmReturn} 
+            className="confirm-btn" 
+            disabled={loading}
+            style={{background: '#28a745', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '5px'}}
+          >
+            {loading ? 'Processing Invoice...' : 'Confirm Return & Create Invoice'}
           </button>
         </div>
+
       </div>
     </div>
   );

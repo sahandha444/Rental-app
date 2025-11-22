@@ -89,9 +89,12 @@ body {
   color: var(--text-color);
 }
 
-.settings-link {
-  background-color: #f1f3f5;
-  color: #495057;
+/* --- FIX: Active NavLink State (Desktop and Mobile) --- */
+.nav-link.active,
+.mobile-link.active {
+  background-color: #e9ecef;
+  color: var(--text-color);
+  font-weight: 600; 
 }
 
 /* --- Hamburger Button (Hidden on Desktop) --- */

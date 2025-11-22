@@ -1,0 +1,89 @@
+/* --- Modal Overlay & Container --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6); /* Dark semi-transparent background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensure it's above other elements */
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  max-width: 550px;
+  width: 100%;
+  max-height: 90vh; /* Make sure it doesn't fill the whole screen vertically */
+  overflow-y: auto; /* Allow scrolling if content is long */
+}
+
+.modal-content h2 {
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 10px;
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #212529;
+}
+
+/* --- Form Elements --- */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.modal-content input[type="text"],
+.modal-content input[type="number"],
+.modal-content input[type="date"],
+.modal-content textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  box-sizing: border-box; /* Crucial for padding/width calculation */
+}
+
+/* --- Summary Box --- */
+.summary-box {
+  border: 1px solid #dee2e6;
+}
+
+/* --- Buttons --- */
+.modal-actions button {
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.cancel-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+}
+
+.cancel-btn:hover {
+  background-color: #5a6268;
+}
+
+.confirm-btn {
+  /* Styles handled inline in JS, but here's a hover */
+  border: none;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background-color: #1e7e34 !important; /* Darker green on hover */
+}

@@ -180,12 +180,13 @@ input[type="file"]::file-selector-button:hover {
   padding: 1.5rem;
   border-radius: 8px;
   background-color: #f8f9fa;
-  max-height: 300px;
+  max-height: 450px; /* Increased height so you see more text at once */
   overflow-y: auto;
 }
 
 .agreement-box h3 {
   margin-top: 0;
+  font-size: 1.2rem; /* Slightly larger title */
 }
 
 .agreement-box .summary {
@@ -199,9 +200,10 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .agreement-box ol {
-  font-size: 0.9rem;
+  font-size: 14px; /* Fallback size */
   padding-left: 1.5rem;
-  color: #495057;
+  color: #212529; /* Darker color for better contrast */
+  line-height: 1.6; /* Better readability */
 }
 
 .signature-box {
