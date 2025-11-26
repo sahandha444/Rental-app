@@ -1,6 +1,3 @@
-// File: src/utils/pdfHelper.js
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { v4 as uuidv4 } from 'uuid';
 
 export function dataURLtoFile(dataurl, filename) {
@@ -13,10 +10,14 @@ export function dataURLtoFile(dataurl, filename) {
 }
 
 export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas, formData) => {
+  // 1. DYNAMIC IMPORTS
+  const html2canvas = (await import('html2canvas')).default;
+  const { jsPDF } = await import('jspdf');
+
   if (!agreementBoxElement || !signatureCanvas) throw new Error("Missing agreement components");
   if (document.fonts?.ready) await document.fonts.ready;
 
-  // 1. Clone and Setup
+  // 2. Clone and Setup
   const clone = agreementBoxElement.cloneNode(true);
   clone.style.width = "794px"; 
   clone.style.maxWidth = "794px";
@@ -28,7 +29,7 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   clone.style.maxHeight = "none";
   clone.style.overflow = "visible";
 
-  // 2. Append Signature
+  // 3. Append Signature
   const sigWrapper = document.createElement("div");
   sigWrapper.style.marginTop = "40px"; 
   const label = document.createElement("div");
@@ -38,8 +39,9 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   label.style.marginBottom = "10px";
   sigWrapper.appendChild(label);
   
+  // Use PNG for the signature (High quality, transparent)
   const sigImg = document.createElement("img");
-  sigImg.src = signatureCanvas.toDataURL();
+  sigImg.src = signatureCanvas.toDataURL('image/png'); 
   sigImg.style.width = "200px"; 
   sigImg.style.height = "auto";
   sigWrapper.appendChild(sigImg);
@@ -51,7 +53,7 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   sigWrapper.appendChild(customer);
   clone.appendChild(sigWrapper);
 
-  // 3. Render Offscreen
+  // 4. Render Offscreen
   const container = document.createElement("div");
   container.style.position = "absolute";
   container.style.left = "-9999px"; 
@@ -60,11 +62,12 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   container.appendChild(clone);
   document.body.appendChild(container);
 
-  const fullHeight = clone.scrollHeight + 50; 
-  await new Promise(r => setTimeout(r, 250));
+  const fullHeight = clone.scrollHeight + 30; 
+  
+  await new Promise(r => setTimeout(r, 100));
 
   const canvas = await html2canvas(clone, {
-    scale: 2, 
+    scale: 1.5, // Kept at 1.5 for balance, but you can set to 2 for ultra-sharpness
     useCORS: true,
     backgroundColor: "#ffffff",
     width: 794,
@@ -72,12 +75,15 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
     windowWidth: 794,
     windowHeight: fullHeight,
     scrollY: 0,
+    logging: false,
   });
 
   document.body.removeChild(container);
 
-  // 4. Generate PDF
-  const imgData = canvas.toDataURL("image/png");
+  // 5. Generate PDF using PNG
+  // <--- CHANGED BACK TO PNG
+  const imgData = canvas.toDataURL("image/png"); 
+  
   const pdf = new jsPDF("p", "pt", "a4");
   const pageWidth = pdf.internal.pageSize.width; 
   const pageHeight = pdf.internal.pageSize.height; 
@@ -89,6 +95,7 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   let heightLeft = pdfHeight;
   let position = 0;
 
+  // Add pages (PNG format)
   pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
   heightLeft -= pageHeight;
 

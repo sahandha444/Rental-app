@@ -3,11 +3,28 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
+import imageCompression from 'browser-image-compression'; 
 import './NewRentalPage.css'; 
 
-// Import Helper & Components
 import { generateAgreementPDF, dataURLtoFile } from '../utils/pdfHelper';
 import { RentalStep1, RentalStep2, RentalStep3 } from '../components/RentalSteps';
+
+// --- ⚡ FASTER COMPRESSION SETTINGS ---
+const compressImage = async (file) => {
+  if (!file) return null;
+  const options = {
+    maxSizeMB: 0.6,           // <--- Lowered to 0.6MB for speed
+    maxWidthOrHeight: 1280,   // <--- Lowered to 1280px (Standard HD) is faster to process
+    useWebWorker: true,       
+    initialQuality: 0.7,      // <--- Start with slightly lower quality to speed up initial pass
+  };
+  try {
+    return await imageCompression(file, options);
+  } catch (error) {
+    console.warn("Compression skipped:", error);
+    return file; 
+  }
+};
 
 const NewRentalPage = () => {
   const { carId } = useParams(); 
@@ -20,6 +37,10 @@ const NewRentalPage = () => {
   const [car, setCar] = useState(null); 
   const [loading, setLoading] = useState(true); 
   const [submitting, setSubmitting] = useState(false); 
+  
+  // 🆕 NEW: Status Message State
+  const [statusMsg, setStatusMsg] = useState(''); 
+  
   const [error, setError] = useState(null); 
   const [pastCustomers, setPastCustomers] = useState([]);
 
@@ -41,7 +62,11 @@ const NewRentalPage = () => {
         setCar(carData);
         setFormData(prev => ({ ...prev, startMileage: carData.current_mileage || '' }));
 
-        const { data: rentalsData, error: rentalsError } = await supabase.from('rentals').select('*').order('rental_start_date', { ascending: false });
+        const { data: rentalsData, error: rentalsError } = await supabase
+          .from('rentals')
+          .select('customer_name, customer_id, customer_phone, customer_address, license_photo_front_url, license_photo_back_url, id_card_front_url, id_card_back_url, rental_start_date') 
+          .order('rental_start_date', { ascending: false });
+
         if (rentalsError) throw rentalsError;
 
         if (rentalsData) {
@@ -89,7 +114,9 @@ const NewRentalPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (sigPad.current.isEmpty()) return alert("Signature required.");
+    
     setSubmitting(true);
+    setStatusMsg('Preparing...'); // Start status
     
     try {
       const uploadFile = async (file, folder) => {
@@ -100,24 +127,50 @@ const NewRentalPage = () => {
         return supabase.storage.from('photos').getPublicUrl(filePath).data.publicUrl;
       };
 
-      console.log("Uploading...");
-      const [lf, lb, if_, ib, mp, sigFile] = await Promise.all([
-        uploadFile(formData.licensePhotoFront, 'licenses'), uploadFile(formData.licensePhotoBack, 'licenses'),
-        uploadFile(formData.idCardPhotoFront, 'id-cards'), uploadFile(formData.idCardPhotoBack, 'id-cards'),
-        uploadFile(formData.mileagePhoto, 'mileage-photos'),
-        dataURLtoFile(sigPad.current.toDataURL('image/png'), `${uuidv4()}-signature.png`)
+      // 1. Compression
+      setStatusMsg('Compressing Photos... 📸');
+      
+      const [
+        cmpLicenseFront, 
+        cmpLicenseBack, 
+        cmpIdFront, 
+        cmpIdBack, 
+        cmpMileage,
+        cmpExtraPhotos
+      ] = await Promise.all([
+        compressImage(formData.licensePhotoFront),
+        compressImage(formData.licensePhotoBack),
+        compressImage(formData.idCardPhotoFront),
+        compressImage(formData.idCardPhotoBack),
+        compressImage(formData.mileagePhoto),
+        Promise.all(formData.extraCarPhotos.map(p => compressImage(p))) 
       ]);
+
+      // 2. Uploading
+      setStatusMsg('Uploading Files... ☁️');
+
+      const [lf, lb, if_, ib, mp, sigFile] = await Promise.all([
+        uploadFile(cmpLicenseFront, 'licenses'), 
+        uploadFile(cmpLicenseBack, 'licenses'),
+        uploadFile(cmpIdFront, 'id-cards'), 
+        uploadFile(cmpIdBack, 'id-cards'),
+        uploadFile(cmpMileage, 'mileage-photos'),
+        dataURLtoFile(sigPad.current.toDataURL('image/png'), `${uuidv4()}-signature.png`) 
+      ]);
+      
       const sigUrl = await uploadFile(sigFile, 'signatures');
 
-      const extraPhotos = formData.extraCarPhotos.length > 0 
-        ? await Promise.all(formData.extraCarPhotos.map(f => uploadFile(f, 'car-conditions'))) 
-        : [];
+      const extraPhotos = await Promise.all(
+        cmpExtraPhotos.map(f => uploadFile(f, 'car-conditions'))
+      );
 
-      console.log("Generating PDF...");
+      // 3. PDF Generation
+      setStatusMsg('Creating Agreement... 📄');
       const pdfFile = await generateAgreementPDF(agreementBoxRef.current, sigPad.current.getCanvas(), formData);
       const pdfUrl = await uploadFile(pdfFile, 'agreements');
 
-      console.log("Saving...");
+      // 4. Saving
+      setStatusMsg('Finalizing... 💾');
       await supabase.from('rentals').insert([{ 
           car_id: car.id, car_name: car.name,
           customer_name: formData.customerName, customer_id: formData.customerID,
@@ -135,10 +188,18 @@ const NewRentalPage = () => {
       
       await supabase.from('vehicles').update({ status: 'Rented', current_mileage: formData.startMileage }).eq('id', car.id);
       
+      try {
+        await supabase.functions.invoke('send-local-sms', {
+          body: { customerPhone: formData.customerPhone, customerName: formData.customerName, agreementUrl: pdfUrl }
+        });
+      } catch (e) { console.warn("SMS Error", e); }
+
+      setStatusMsg('Done! ✅');
       navigate('/');
     } catch (err) {
       console.error(err);
       alert("Submission Failed: " + err.message);
+      setStatusMsg(''); // Clear status on error
     } finally {
       setSubmitting(false);
     }
@@ -149,12 +210,23 @@ const NewRentalPage = () => {
 
   return (
     <div className="form-container" style={{maxWidth: '700px', margin: '20px auto', padding: '20px', background: '#fff', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'}}>
-      {error && <div style={{color: 'red'}}>{error}</div>}
+      {error && <div style={{color: 'red', marginBottom: '10px'}}>{error}</div>}
       <form className="rental-form" onSubmit={handleSubmit}>
         {step === 1 && <RentalStep1 formData={formData} setFormData={setFormData} car={car} pastCustomers={pastCustomers} handleTextChange={handleTextChange} handleFileChange={handleFileChange} nextStep={nextStep} />}
         {step === 2 && <RentalStep2 formData={formData} handleTextChange={handleTextChange} handleFileChange={handleFileChange} prevStep={prevStep} nextStep={nextStep} car={car} totalCost={(formData.rentalDays * (car.daily_rate || 0)).toFixed(2)} />}
         {step === 3 && <RentalStep3 formData={formData} car={car} totalCost={(formData.rentalDays * (car.daily_rate || 0)).toFixed(2)} agreementBoxRef={agreementBoxRef} sigPadRef={sigPad} clearSignature={clearSignature} prevStep={prevStep} submitting={submitting} />}
       </form>
+      
+      {/* 🆕 NEW: Loading Status Indicator */}
+      {submitting && (
+        <div style={{
+          position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+          background: '#333', color: '#fff', padding: '12px 24px', borderRadius: '30px',
+          fontWeight: 'bold', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 9999
+        }}>
+          {statusMsg || 'Processing...'}
+        </div>
+      )}
     </div>
   );
 };
