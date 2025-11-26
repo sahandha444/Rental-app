@@ -2,6 +2,10 @@
 import React, { useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 
+// --- FIX: Using extensions bypasses the Android 13+ Photo Picker ---
+// This forces the "System File Chooser" which includes the Camera button.
+const FILE_ACCEPT = ".jpg, .jpeg, .png, .webp, .heic";
+
 // --- STEP 1: CUSTOMER DETAILS ---
 export const RentalStep1 = ({ formData, setFormData, car, pastCustomers, handleTextChange, handleFileChange, nextStep }) => {
   const [customerSearch, setCustomerSearch] = useState('');
@@ -36,9 +40,6 @@ export const RentalStep1 = ({ formData, setFormData, car, pastCustomers, handleT
     c.customer_name.toLowerCase().includes(customerSearch.toLowerCase()) || 
     c.customer_id.toLowerCase().includes(customerSearch.toLowerCase())
   );
-
-  // FIX: Specific MIME types bypass the Android Photo Picker and show the System Chooser (Camera + Files)
-  const fileAccept = "image/jpeg, image/png, image/jpg";
 
   return (
     <div className="form-step-container">
@@ -80,19 +81,19 @@ export const RentalStep1 = ({ formData, setFormData, car, pastCustomers, handleT
       
       <label>Driver's License (Front)</label>
       {formData.existingLicenseFront && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded. Upload new file to replace.</div>}
-      <input type="file" id="licensePhotoFront" className="form-input" accept={fileAccept} onChange={handleFileChange} />
+      <input type="file" id="licensePhotoFront" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} />
       
       <label>Driver's License (Back)</label>
       {formData.existingLicenseBack && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded. Upload new file to replace.</div>}
-      <input type="file" id="licensePhotoBack" className="form-input" accept={fileAccept} onChange={handleFileChange} />
+      <input type="file" id="licensePhotoBack" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} />
 
       <label>ID Card (Front) (Optional)</label>
       {formData.existingIdFront && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded.</div>}
-      <input type="file" id="idCardPhotoFront" className="form-input" accept={fileAccept} onChange={handleFileChange} />
+      <input type="file" id="idCardPhotoFront" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} />
       
       <label>ID Card (Back) (Optional)</label>
       {formData.existingIdBack && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded.</div>}
-      <input type="file" id="idCardPhotoBack" className="form-input" accept={fileAccept} onChange={handleFileChange} />
+      <input type="file" id="idCardPhotoBack" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} />
 
       <label htmlFor="remarksStep1">Remarks (Step 1)</label>
       <textarea id="remarksStep1" className="form-input" value={formData.remarksStep1} onChange={handleTextChange} />
@@ -106,9 +107,6 @@ export const RentalStep1 = ({ formData, setFormData, car, pastCustomers, handleT
 
 // --- STEP 2: RENTAL DETAILS ---
 export const RentalStep2 = ({ formData, handleTextChange, handleFileChange, prevStep, nextStep, car, totalCost }) => {
-  // FIX: Specific MIME types
-  const fileAccept = "image/jpeg, image/png, image/jpg";
-
   return (
     <div className="form-step-container">
       <h2>Step 2: Rental & Vehicle Details</h2>
@@ -122,10 +120,10 @@ export const RentalStep2 = ({ formData, handleTextChange, handleFileChange, prev
       <input type="number" id="advancePayment" className="form-input" value={formData.advancePayment} onChange={handleTextChange} />
 
       <label htmlFor="mileagePhoto">Car Dashboard Photo (Mileage) (Required)</label>
-      <input type="file" id="mileagePhoto" className="form-input" accept={fileAccept} onChange={handleFileChange} required />
+      <input type="file" id="mileagePhoto" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} required />
       
       <label htmlFor="extraCarPhotos">Extra Car Photos (Optional, max 5)</label>
-      <input type="file" id="extraCarPhotos" className="form-input" accept={fileAccept} onChange={handleFileChange} multiple />
+      <input type="file" id="extraCarPhotos" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} multiple />
       
       <label htmlFor="remarksStep2">Remarks (Step 2)</label>
       <textarea id="remarksStep2" className="form-input" value={formData.remarksStep2} onChange={handleTextChange} />
@@ -144,14 +142,8 @@ export const RentalStep2 = ({ formData, handleTextChange, handleFileChange, prev
   );
 };
 
-// --- STEP 3: AGREEMENT (Unchanged) ---
+// --- STEP 3: AGREEMENT ---
 export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadRef, clearSignature, prevStep, submitting }) => {
-  // ... (Keep the exact code for Step 3 I gave you earlier) ...
-  // For brevity, I'm not pasting the Step 3 block again since it hasn't changed.
-  // Just make sure you keep the RentalStep3 code you already have!
-  
-  // ... Re-paste your RentalStep3 code here ...
-  
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth() + 1; 
