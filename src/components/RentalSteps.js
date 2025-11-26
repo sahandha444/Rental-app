@@ -1,4 +1,3 @@
-// File: src/components/RentalSteps.js
 import React, { useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 
@@ -75,51 +74,24 @@ export const RentalStep1 = ({ formData, setFormData, car, pastCustomers, handleT
 
       <hr className="form-divider" />
       
-      <hr className="form-divider" />
+      {/* IMPORTANT: accept="image/*" is what triggers the "Camera or Gallery" menu on phones */}
       
       <label>Driver's License (Front)</label>
       {formData.existingLicenseFront && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded. Upload new file to replace.</div>}
-      <input 
-        type="file" 
-        id="licensePhotoFront" 
-        className="form-input" 
-        accept="image/*" 
-        // REMOVED capture="environment"
-        onChange={handleFileChange} 
-      />
+      <input type="file" id="licensePhotoFront" className="form-input" accept="image/*" onChange={handleFileChange} />
       
       <label>Driver's License (Back)</label>
       {formData.existingLicenseBack && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded. Upload new file to replace.</div>}
-      <input 
-        type="file" 
-        id="licensePhotoBack" 
-        className="form-input" 
-        accept="image/*" 
-        // REMOVED capture="environment"
-        onChange={handleFileChange} 
-      />
+      <input type="file" id="licensePhotoBack" className="form-input" accept="image/*" onChange={handleFileChange} />
 
       <label>ID Card (Front) (Optional)</label>
       {formData.existingIdFront && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded.</div>}
-      <input 
-        type="file" 
-        id="idCardPhotoFront" 
-        className="form-input" 
-        accept="image/*" 
-        // REMOVED capture="environment"
-        onChange={handleFileChange} 
-      />
+      <input type="file" id="idCardPhotoFront" className="form-input" accept="image/*" onChange={handleFileChange} />
       
       <label>ID Card (Back) (Optional)</label>
       {formData.existingIdBack && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded.</div>}
-      <input 
-        type="file" 
-        id="idCardPhotoBack" 
-        className="form-input" 
-        accept="image/*" 
-        // REMOVED capture="environment"
-        onChange={handleFileChange} 
-      />
+      <input type="file" id="idCardPhotoBack" className="form-input" accept="image/*" onChange={handleFileChange} />
+
       <label htmlFor="remarksStep1">Remarks (Step 1)</label>
       <textarea id="remarksStep1" className="form-input" value={formData.remarksStep1} onChange={handleTextChange} />
 
@@ -144,27 +116,12 @@ export const RentalStep2 = ({ formData, handleTextChange, handleFileChange, prev
       <label htmlFor="advancePayment">Advance Payment (LKR)</label>
       <input type="number" id="advancePayment" className="form-input" value={formData.advancePayment} onChange={handleTextChange} />
 
+      {/* IMPORTANT: accept="image/*" is here too */}
       <label htmlFor="mileagePhoto">Car Dashboard Photo (Mileage) (Required)</label>
-      <input 
-        type="file" 
-        id="mileagePhoto" 
-        className="form-input" 
-        accept="image/*" 
-        // REMOVED capture="environment"
-        onChange={handleFileChange} 
-        required 
-      />
+      <input type="file" id="mileagePhoto" className="form-input" accept="image/*" onChange={handleFileChange} required />
       
       <label htmlFor="extraCarPhotos">Extra Car Photos (Optional, max 5)</label>
-      <input 
-        type="file" 
-        id="extraCarPhotos" 
-        className="form-input" 
-        accept="image/*" 
-        // REMOVED capture="environment"
-        onChange={handleFileChange} 
-        multiple 
-      />
+      <input type="file" id="extraCarPhotos" className="form-input" accept="image/*" onChange={handleFileChange} multiple />
       
       <label htmlFor="remarksStep2">Remarks (Step 2)</label>
       <textarea id="remarksStep2" className="form-input" value={formData.remarksStep2} onChange={handleTextChange} />
@@ -183,27 +140,19 @@ export const RentalStep2 = ({ formData, handleTextChange, handleFileChange, prev
   );
 };
 
-// File: src/components/RentalSteps.js (Update RentalStep3 only)
-
-// ... (Step 1 and Step 2 remain unchanged) ...
-
 // --- STEP 3: AGREEMENT (EXACT PDF COPY) ---
 export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadRef, clearSignature, prevStep, submitting }) => {
-  
-  // --- Helper: Date Calculations ---
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth() + 1; 
   const day = today.getDate();
   
-  // Return Date
   const returnDate = new Date(today);
   returnDate.setDate(today.getDate() + (parseInt(formData.rentalDays) || 1));
   const rYear = returnDate.getFullYear();
   const rMonth = returnDate.getMonth() + 1;
   const rDay = returnDate.getDate();
 
-  // Style for filled blanks
   const blankStyle = { fontWeight: 'bold', textDecoration: 'underline', padding: '0 5px' };
 
   return (
@@ -220,16 +169,13 @@ export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadR
           fontFamily: '"Iskoola Pota", "Noto Sans Sinhala", Arial, sans-serif',
           color: '#000',
           lineHeight: '1.6',
-          fontSize: '13px', // Slightly smaller to fit content
+          fontSize: '13px',
           textAlign: 'justify'
         }}
       >
-        {/* --- HEADER --- */}
         <h3 style={{textAlign: 'center', textDecoration: 'underline', marginBottom: '15px', fontSize: '18px'}}>එකඟතා ගිවිසුමයි</h3>
 
-        <p>
-          <span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> දින දීය.
-        </p>
+        <p><span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> දින දීය.</p>
 
         <p>
           පොල් පිටියවත්ත, රස්සන්න්දෙණිය, දෙවිනුවර පදිංචි ජී. එච්. එස්. තාරක වන මම සහ 
@@ -240,74 +186,43 @@ export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadR
           <span style={blankStyle}> {car.name}</span> වර්ගයේ වාහනය කුලියට ලබා ගැනීම පිළිබඳ ගිවිසුම මෙසේය.
         </p>
 
-        {/* --- CLAUSES (1-18) --- */}
         <div style={{marginTop: '10px'}}>
-          
           <p>1). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය දෙවන පාර්ශවය විසින් කුලී පදනම මත පාවිච්චි කිරීමට ලබා ගැනීම සිදු විය.</p>
-
           <p>2). ඉහත කී අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය <span style={blankStyle}>{year}/{month}/{day}</span> දින ඉහත කී දෙවන පාර්ශවය වන මම පරීක්ෂා කර බලා ධාවනය කිරීමට හැකි හොඳ තත්වයේ පවතින බවට සැහීමකට පත් වී මෙම වාහනයේ යතුර, රක්ෂණ සහතිකය සහ ආදායම් බලපත්‍රයේ පිටපත ද සමග භාර ගතිමි.</p>
-
           <p>3). ඉහත අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය භාරගත් මොහොතේ සිට සියළු වගකීම් දෙවන පාර්ශවය වන මා සතු වන අතර ඇප වශයෙන් ශ්‍රී ලංකාවේ වලංගු මුදලින් රුපියල් <span style={blankStyle}>{formData.advancePayment || '_______'}</span> ක මුදලක් තැන්පත් කල යුතුවේ. එම මුදල නැවත වාහනය භාරදුන් පසු මෙහි පහත කොන්දේසි වලට යටත්ව ආපසු ගෙවනු ලැබේ.</p>
-
           <p>4). එනම්, වාහනයට යම්කිසි අලාභ හානියක් කර තිබුණහොත් හෝ අලුත් වැඩියාවක් වාහනය ලබාගත් පුද්ගලයා භාරයේ තිබියදී සිදුවී ඇත්නම් ඒ සඳහා වැයවෙන මුදල් වාහනය භාරගත් අය නොගෙවන්නේ නම් ඉහත කී තැන්පත් මුදලින් අඩු කර ගනු ලැබේ. තැන්පත් මුදල අළුත්වැඩියාව සඳහා ප්‍රමාණවත් නොවේ නම් ඉතිරි මුදල ද වාහනය භාරගත් පාර්ශවය විසින් ආයතනයට ගෙවිය යුතුය.</p>
-
           <p>5). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය එක් දිනක් තුල රුපියල් <span style={blankStyle}>{car.daily_rate}</span> ගෙවිය යුතු අතර උපරිම කිලෝ මීටර් <span style={blankStyle}>{car.km_limit_per_day || 100}</span> කට යටත්ව වැඩිවන සෑම කිලෝ මීටරයකටම රුපියල් <span style={blankStyle}>{car.extra_km_price || 0}</span> බැගින් වාහනය භාරගත් පුද්ගලයා විසින් ගෙවිය යුතු වේ.</p>
-
-          <p>6). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය දින දෙකකට වඩා භාරගන්නා අවස්ථාවේදී පහත සඳහන් කරුණු වලට යටත් විය යුතුය.<br/>
-          (අ) <span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> දින පැයට ඉහත භාර ගන්නා වාහනය ඉහත ගිවිසගත් මිල ගණන් වලට යටත්ව <span style={blankStyle}>{rYear}</span> වර්ෂ <span style={blankStyle}>{rMonth}</span> මස <span style={blankStyle}>{rDay}</span> දින පැයට ප්‍රථම භාර දිය යුතුය.<br/>
-          (ආ) එසේ භාර දීමට නොහැකි වන අවස්ථාවකදී ප්‍රමාද වන සැම එක් පැයක් සඳහාම ප්‍රමාද ගාස්තු වශයෙන් රුපියල් <span style={blankStyle}>{car.late_fee_per_hour || '___'}</span> ක මුදලක් අමතරව ගෙවිය යුතු වේ.</p>
-
+          <p>6). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය දින දෙකකට වඩා භාරගන්නා අවස්ථාවේදී පහත සඳහන් කරුණු වලට යටත් විය යුතුය.<br/>(අ) <span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> දින පැයට ඉහත භාර ගන්නා වාහනය ඉහත ගිවිසගත් මිල ගණන් වලට යටත්ව <span style={blankStyle}>{rYear}</span> වර්ෂ <span style={blankStyle}>{rMonth}</span> මස <span style={blankStyle}>{rDay}</span> දින පැයට ප්‍රථම භාර දිය යුතුය.<br/>(ආ) එසේ භාර දීමට නොහැකි වන අවස්ථාවකදී ප්‍රමාද වන සැම එක් පැයක් සඳහාම ප්‍රමාද ගාස්තු වශයෙන් රුපියල් <span style={blankStyle}>{car.late_fee_per_hour || '___'}</span> ක මුදලක් අමතරව ගෙවිය යුතු වේ.</p>
           <p>7). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනයට යම්කිසි අනතුරක් සිදු වුවහොත් වාහනයේ අයිතිකරු වන ජී. එච්. එස්. තාරක යන අයගේ කැමැත්ත පරිදි රක්ෂණ සමාගම මගින් අලාභ මුදල් ලබා ගත්තේද? නැද්ද? යන්න තීරණය වන අතර අලාභ මුදල් ගෙවීම රක්ෂණ සමාගම ප්‍රතික්ෂේප කලහොත් වාහනය පාවිච්චි කිරීමට ලබා ගත් පුද්ගලයා විසින් ඒ සඳහා වැයවන මුදල ගෙවිය යුතුය.</p>
-
           <p>8). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය භාරගත් තැනත්තා භාරයේ තිබියදී යම්කිසි අනතුරක් සිදුවුව හොත් එම වාහනය අලුත්වැඩියා කිරීම සඳහා ගරාජයක් තුල දින කිහිපයක් තැබීමට සිදු වුවහොත් එසේ ගරාජය තුල තිබෙනා දින ගණන සඳහා වාහන හිමිකරුට සිදුවන පාඩුව දිනකට රුපියල් <span style={blankStyle}>{car.daily_rate}</span> බැගින් වාහන හිමිකරුට ගෙවිය යුතු වේ.</p>
-
           <p>9). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය නීති විරෝධී කටයුතු සඳහා යොදා ගැනීම තහනම් වන අතර මත් වතුර බී ධාවනය කිරීම ද තහනම් වේ.</p>
-
           <p>10). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය කිසියම් මාර්ග නීති කඩකිරීමකදී හෝ හදිසි අනතුරකදී හෝ වෙනත් අයෙකුට වාහනය ධාවනය කිරීමට තිබියදී එවැනි යම් අනතුරක් හෝ මාර්ග නීති කඩ කිරීමක් හෝ නීතී විරෝධී කටයුත්තක් සඳහා යොදා ගෙන තිබුන හොත් එකි වගකීම සම්පූර්ණයෙන්ම වාහනය භාරගත් පුද්ගලයා විසින් ගෙවිය යුතු වේ. වාහනයේ හිමිකරු ඒ සඳහා වග කියනු නොලැබේ.</p>
-
           <p>11). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය යම්කිසි අනතුරකදී හෝ නීතී විරෝධි කටයුත්තක් සඳහා යොදා ගැනීමකදී හෝ පොලිස් භාරයට පත් වුවහොත් එසේ පොලිස් භාරයේ තිබෙන දින ගණන සඳහා දිනකට අලාභ වශයෙන් රුපියල් <span style={blankStyle}>{car.daily_rate}</span> බැගින් වාහනයේ හිමිකරුට ගෙවිය යුතු වේ.</p>
-
           <p>12). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය භාරගත් තැනැත්තා විසින් තෙවන පාර්ශවයකට කුලියට දීමටද, වෙනත් අයෙකුට පැවරීමටද, විකිණීමටද තහනම් වේ.</p>
-
           <p>13). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනයේ ගමන් ගන්නා උපරිම මගින් ගණන <span style={blankStyle}>{car.passengers || 4}</span> වේ.</p>
-
           <p>14). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනයේ එන්ජින් ඔයිල්, කුලන්, සහ ටයර් එයාර් පෙෂර් වැනි වාහනයේ භෞතික තත්වය පරීක්ෂා කර බලා ලබාගත් බවටත් ඒවා නොමැතිකමින් යම් දෝෂයක් වාහනය තුල ඇති වුවහොත් වාහනය භාරගත් පුද්ගලයා ඒ සඳහා අලාභ ගෙවිය යුතුය.</p>
-
           <p>15). රියදුරු බලපත්‍රයක් නොමැති අයට ද, අවුරුදු 18ට අඩු අයට ද මනා පලපුරුද්දක් නොමැති අයට ද සහ බලපත්‍රයක් ඇති අයවලුන් හට වාහනය පැදවීම තහනම් වන අතර වාහනය භාරගන්නා පුද්ගලයා අදාල සුදුසුකම් සපුරා තිබිය යුතුය.</p>
-
           <p>16). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය ආපසු භාර දීමේදී ඇතුළත හා පිටත පිරිසිදු කර භාර දිය යුතු අතර එසේ පිරිසිදු කිරීමක් සිදු කර නොමැති අවස්ථාවකදී ඒ සඳහා පිරිසිදු කිරීමට වැය වන මුදල වශයෙන් රුපියල් <span style={blankStyle}>1500/=</span> ක් පිරිසිදු කිරීමේ ගාස්තු වශයෙන් ගෙවිය යුතුය.</p>
-
           <p>17). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය ඉහත සඳහන් වගන්ති හා කොන්දේසි වලට යටත්ව පාවිච්චි කිරීමටත් වාහනය භාර ගත් තත්වයෙන්ම භාර දීමට එකඟ වන මම, වාහන හිමිකරු සමග <span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> වන දින මාතර දී ගිවිස ගත් බවට සහතික කරමි.</p>
-          
           <p>18). අප ආයතනය කුලී පදනම මත ලබා දෙනු ලබන්නේ මගී ප්‍රවාහන කටයුතු සඳහා පමණක් වන අතර ඉන් බැහැරව නීති විරෝධි කටයුතු (දැව හා සතුන්, මධ්‍යසාර හා ප්‍රචණ්ඩ ක්‍රියා) සඳහා භාවිතය සපුරා තහනම් වේ.</p>
-
         </div>
 
-        {/* --- SIGNATURES --- */}
         <div style={{marginTop: '40px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px'}}>
-          
-          {/* CUSTOMER (2nd Party) */}
           <div style={{width: '45%'}}>
-            <div style={{borderBottom: '1px dotted #000', marginBottom: '5px', height: '40px'}}>
-               {/* Space for PDF signature insertion */}
-            </div>
+            <div style={{borderBottom: '1px dotted #000', marginBottom: '5px', height: '40px'}}></div>
             <div>අත්සන (දෙවන පාර් ශවය)</div>
             <div style={{marginTop: '5px'}}>නම: {formData.customerName}</div>
             <div>ජා.හැ.අංකය: {formData.customerID}</div>
             <div>ලිපිනය: {formData.customerAddress}</div>
           </div>
-
-          {/* OWNER */}
           <div style={{width: '45%'}}>
             <div style={{borderBottom: '1px dotted #000', marginBottom: '5px', height: '40px'}}></div>
             <div>අත්සන (හිමිකරු)</div>
             <div style={{marginTop: '5px'}}>ජා.හැ.අංකය : ..............................</div>
             <div>ලිපිනය: ...........................................</div>
           </div>
-
         </div>
 
-        {/* GUARANTORS */}
         <div style={{marginTop: '30px'}}>
           <strong>ඇපකරුවන් :</strong>
           <div style={{marginTop: '15px', display: 'flex', justifyContent: 'space-between'}}>
@@ -319,7 +234,6 @@ export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadR
             <span>අත්සන: ...........................</span>
           </div>
         </div>
-
       </div>
 
       <label style={{marginTop: '20px', display: 'block', fontWeight: 'bold'}}>Customer Signature</label>
