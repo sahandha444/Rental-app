@@ -14,13 +14,13 @@ import RedirectPage from './pages/RedirectPage';
 import YaluToursLogo from './assets/yalu-tours-logo.png';
 import { supabase } from './supabaseClient'; 
 
-// Helper component
+// Helper component to close menu on route change
 const ScrollToTop = ({ closeMenu }) => { 
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
     closeMenu(); 
-  }, [pathname, closeMenu]); 
+  }, [pathname]); // <--- FIXED: Removed 'closeMenu' from here
   return null;
 };
 

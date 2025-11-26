@@ -106,7 +106,46 @@ const NewRentalPage = () => {
     }
   };
 
-  const nextStep = () => setStep(s => s + 1);
+// --- Validation & Navigation ---
+  const nextStep = () => {
+    // Validate Step 1: Customer Details
+    if (step === 1) {
+      // Check for License photos (New Upload OR Existing from search)
+      const hasLicenseFront = formData.licensePhotoFront || formData.existingLicenseFront;
+      const hasLicenseBack = formData.licensePhotoBack || formData.existingLicenseBack;
+
+      if (!formData.customerName || !formData.customerID || !formData.customerPhone || !formData.customerAddress) {
+        showFormError("Please fill in all Customer Details.");
+        return;
+      }
+      if (!hasLicenseFront || !hasLicenseBack) {
+        showFormError("Driver's License photos (Front & Back) are required.");
+        return;
+      }
+    }
+
+    // Validate Step 2: Rental Details
+    if (step === 2) {
+       if (!formData.rentalDays || !formData.startMileage || !formData.advancePayment) {
+        showFormError("Please enter Rental Days,Start Mileage and Advance Payment.");
+        return;
+      }
+      if (!formData.mileagePhoto) {
+        showFormError("A photo of the dashboard mileage is required.");
+        return;
+      }
+    }
+
+    // If validation passes, go to next step
+    setError(null); 
+    setStep(s => s + 1);
+  };
+
+  const showFormError = (message) => {
+    setError(message);
+    window.scrollTo(0, 0); 
+  };
+
   const prevStep = () => setStep(s => s - 1);
   const clearSignature = () => sigPad.current.clear();
 

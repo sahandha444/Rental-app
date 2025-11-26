@@ -75,22 +75,51 @@ export const RentalStep1 = ({ formData, setFormData, car, pastCustomers, handleT
 
       <hr className="form-divider" />
       
+      <hr className="form-divider" />
+      
       <label>Driver's License (Front)</label>
       {formData.existingLicenseFront && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded. Upload new file to replace.</div>}
-      <input type="file" id="licensePhotoFront" className="form-input" accept="image/*" capture="environment" onChange={handleFileChange} />
+      <input 
+        type="file" 
+        id="licensePhotoFront" 
+        className="form-input" 
+        accept="image/*" 
+        // REMOVED capture="environment"
+        onChange={handleFileChange} 
+      />
       
       <label>Driver's License (Back)</label>
       {formData.existingLicenseBack && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded. Upload new file to replace.</div>}
-      <input type="file" id="licensePhotoBack" className="form-input" accept="image/*" capture="environment" onChange={handleFileChange} />
+      <input 
+        type="file" 
+        id="licensePhotoBack" 
+        className="form-input" 
+        accept="image/*" 
+        // REMOVED capture="environment"
+        onChange={handleFileChange} 
+      />
 
       <label>ID Card (Front) (Optional)</label>
       {formData.existingIdFront && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded.</div>}
-      <input type="file" id="idCardPhotoFront" className="form-input" accept="image/*" capture="environment" onChange={handleFileChange} />
+      <input 
+        type="file" 
+        id="idCardPhotoFront" 
+        className="form-input" 
+        accept="image/*" 
+        // REMOVED capture="environment"
+        onChange={handleFileChange} 
+      />
       
       <label>ID Card (Back) (Optional)</label>
       {formData.existingIdBack && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded.</div>}
-      <input type="file" id="idCardPhotoBack" className="form-input" accept="image/*" capture="environment" onChange={handleFileChange} />
-
+      <input 
+        type="file" 
+        id="idCardPhotoBack" 
+        className="form-input" 
+        accept="image/*" 
+        // REMOVED capture="environment"
+        onChange={handleFileChange} 
+      />
       <label htmlFor="remarksStep1">Remarks (Step 1)</label>
       <textarea id="remarksStep1" className="form-input" value={formData.remarksStep1} onChange={handleTextChange} />
 
@@ -116,10 +145,26 @@ export const RentalStep2 = ({ formData, handleTextChange, handleFileChange, prev
       <input type="number" id="advancePayment" className="form-input" value={formData.advancePayment} onChange={handleTextChange} />
 
       <label htmlFor="mileagePhoto">Car Dashboard Photo (Mileage) (Required)</label>
-      <input type="file" id="mileagePhoto" className="form-input" accept="image/*" capture="environment" onChange={handleFileChange} required />
+      <input 
+        type="file" 
+        id="mileagePhoto" 
+        className="form-input" 
+        accept="image/*" 
+        // REMOVED capture="environment"
+        onChange={handleFileChange} 
+        required 
+      />
       
       <label htmlFor="extraCarPhotos">Extra Car Photos (Optional, max 5)</label>
-      <input type="file" id="extraCarPhotos" className="form-input" accept="image/*" capture="environment" onChange={handleFileChange} multiple />
+      <input 
+        type="file" 
+        id="extraCarPhotos" 
+        className="form-input" 
+        accept="image/*" 
+        // REMOVED capture="environment"
+        onChange={handleFileChange} 
+        multiple 
+      />
       
       <label htmlFor="remarksStep2">Remarks (Step 2)</label>
       <textarea id="remarksStep2" className="form-input" value={formData.remarksStep2} onChange={handleTextChange} />
