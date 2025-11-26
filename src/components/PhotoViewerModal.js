@@ -1,75 +1,162 @@
 // File: src/components/PhotoViewerModal.js
-import React, { useMemo } from 'react';
-import './PhotoViewerModal.css'; // We'll add styles for this
+
+import React, { useState } from 'react';
+import jsPDF from 'jspdf';
+import './PhotoViewerModal.css'; // We will add styles next
 
 const PhotoViewerModal = ({ rental, onClose }) => {
+  const [downloading, setDownloading] = useState(false);
 
-  // Use useMemo to build the photo list only when the rental object changes
-  const allPhotos = useMemo(() => {
-    if (!rental) return [];
-    
-    const photos = [];
+  // 1. Helper: Convert Image URL to Base64 (needed for jsPDF)
+  const getBase64FromUrl = async (url) => {
+    const data = await fetch(url);
+    const blob = await data.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => resolve(reader.result);
+    });
+  };
 
-    // Helper to add a photo if the URL exists
-    const addPhoto = (url, title) => {
-      if (url) {
-        photos.push({ url, title });
+  // 2. Main Function: Generate and Download PDF
+  const downloadPhotosPDF = async () => {
+    setDownloading(true);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      const maxWidth = pageWidth - (margin * 2);
+      const maxHeight = pageHeight - (margin * 2) - 20; // -20 for labels
+
+      // List of all potential single photos
+      const photoList = [
+        { label: 'License (Front)', url: rental.license_photo_front_url },
+        { label: 'License (Back)', url: rental.license_photo_back_url },
+        { label: 'ID Card (Front)', url: rental.id_card_front_url },
+        { label: 'ID Card (Back)', url: rental.id_card_back_url },
+        { label: 'Mileage / Dashboard', url: rental.mileage_photo_url },
+        { label: 'Signature', url: rental.signature_url },
+      ];
+
+      // Add extra car photos if they exist
+      if (rental.extra_car_photos && Array.isArray(rental.extra_car_photos)) {
+        rental.extra_car_photos.forEach((url, index) => {
+          photoList.push({ label: `Car Condition Photo ${index + 1}`, url: url });
+        });
       }
-    };
 
-    // --- Add photos from rental start ---
-    addPhoto(rental.license_photo_front_url, 'License (Front)');
-    addPhoto(rental.license_photo_back_url, 'License (Back)');
-    addPhoto(rental.id_card_front_url, 'ID Card (Front)');
-    addPhoto(rental.id_card_back_url, 'ID Card (Back)');
-    addPhoto(rental.mileage_photo_url, 'Start Mileage');
-    
-    // Add extra car photos (it's an array)
-    if (rental.extra_car_photos && rental.extra_car_photos.length > 0) {
-      rental.extra_car_photos.forEach((url, index) => {
-        addPhoto(url, `Extra Photo ${index + 1}`);
-      });
+      // Filter out null/undefined URLs
+      const validPhotos = photoList.filter(p => p.url);
+
+      // --- Title Page ---
+      doc.setFontSize(22);
+      doc.text("Rental Photo Reference", pageWidth / 2, 40, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.text(`Reference ID: #${rental.id}`, pageWidth / 2, 55, { align: 'center' });
+      doc.text(`Customer: ${rental.customer_name}`, pageWidth / 2, 62, { align: 'center' });
+      doc.text(`Vehicle: ${rental.car_name}`, pageWidth / 2, 69, { align: 'center' });
+      doc.text(`Date: ${new Date(rental.created_at || new Date()).toLocaleDateString()}`, pageWidth / 2, 76, { align: 'center' });
+
+      // --- Loop through photos and add pages ---
+      for (const item of validPhotos) {
+        try {
+          doc.addPage();
+          doc.setFontSize(14);
+          doc.text(item.label, margin, margin + 5);
+
+          // Convert image to base64
+          const base64Img = await getBase64FromUrl(item.url);
+          
+          // Get image properties to fit it nicely on the page
+          const imgProps = doc.getImageProperties(base64Img);
+          const imgRatio = imgProps.width / imgProps.height;
+          
+          let finalWidth = maxWidth;
+          let finalHeight = maxWidth / imgRatio;
+
+          // If too tall, scale by height
+          if (finalHeight > maxHeight) {
+            finalHeight = maxHeight;
+            finalWidth = maxHeight * imgRatio;
+          }
+
+          doc.addImage(base64Img, 'JPEG', margin, margin + 15, finalWidth, finalHeight);
+          
+        } catch (err) {
+          console.error(`Failed to load image: ${item.label}`, err);
+          // Continue to next image even if one fails
+        }
+      }
+
+      doc.save(`Photos-Rental-${rental.id}.pdf`);
+
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Could not generate PDF. Check console for details.");
+    } finally {
+      setDownloading(false);
     }
-    
-    addPhoto(rental.signature_url, 'Customer Signature');
+  };
 
-    // --- Add photos from rental return (if they exist) ---
-    // (I'm assuming these are the field names you use in your return modal)
-    addPhoto(rental.return_mileage_photo_url, 'Return Mileage'); 
-    
-    if (rental.return_damage_photos && rental.return_damage_photos.length > 0) {
-      rental.return_damage_photos.forEach((url, index) => {
-        addPhoto(url, `Damage Photo ${index + 1}`);
-      });
-    }
-
-    return photos;
-  }, [rental]);
-
-  if (!rental) return null;
+  // Collect all photos for display in the grid
+  const allPhotos = [
+    { label: 'License Front', url: rental.license_photo_front_url },
+    { label: 'License Back', url: rental.license_photo_back_url },
+    { label: 'ID Front', url: rental.id_card_front_url },
+    { label: 'ID Back', url: rental.id_card_back_url },
+    { label: 'Mileage', url: rental.mileage_photo_url },
+    ...(rental.extra_car_photos || []).map((url, i) => ({ label: `Car Photo ${i+1}`, url })),
+    { label: 'Signature', url: rental.signature_url }
+  ].filter(p => p.url);
 
   return (
-    // Use the same class names as your other modal for consistency
-    <div className="modal-backdrop"> 
-      <div className="modal-content photo-modal">
-        <div className="modal-header">
-          <h2>Photos for {rental.car_name}</h2>
-          <button onClick={onClose} className="close-button">&times;</button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="photo-modal-content" onClick={e => e.stopPropagation()}>
+        
+        {/* Header Section with Reference Info */}
+        <div className="photo-modal-header">
+          <div>
+            <h2>Rental Photos</h2>
+            <div className="reference-info">
+              <span className="ref-tag"><strong>Ref ID:</strong> #{rental.id}</span>
+              {rental.agreement_pdf_url && (
+                <a href={rental.agreement_pdf_url} target="_blank" rel="noreferrer" className="ref-link">📄 View Agreement</a>
+              )}
+              {rental.return_invoice_pdf_url && (
+                <a href={rental.return_invoice_pdf_url} target="_blank" rel="noreferrer" className="ref-link">🧾 View Invoice</a>
+              )}
+            </div>
+          </div>
+          <button className="close-btn-modal" onClick={onClose}>&times;</button>
         </div>
-        <div className="modal-body photo-grid">
-          {allPhotos.length > 0 ? (
+
+        {/* Action Bar */}
+        <div className="photo-actions">
+           <button 
+             className="download-pdf-btn" 
+             onClick={downloadPhotosPDF}
+             disabled={downloading}
+           >
+             {downloading ? 'Generating PDF...' : '📥 Download All as PDF'}
+           </button>
+        </div>
+
+        {/* Scrollable Grid of Photos */}
+        <div className="photos-grid">
+          {allPhotos.length === 0 ? <p>No photos available.</p> : (
             allPhotos.map((photo, index) => (
-              <div key={index} className="photo-item">
-                <a href={photo.url} target="_blank" rel="noopener noreferrer" title="Click to open full size">
-                  <img src={photo.url} alt={photo.title} />
+              <div key={index} className="photo-card">
+                <p className="photo-label">{photo.label}</p>
+                <a href={photo.url} target="_blank" rel="noopener noreferrer">
+                  <img src={photo.url} alt={photo.label} loading="lazy" />
                 </a>
-                <p>{photo.title}</p>
               </div>
             ))
-          ) : (
-            <p>No photos found for this rental.</p>
           )}
         </div>
+
       </div>
     </div>
   );

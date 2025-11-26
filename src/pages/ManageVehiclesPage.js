@@ -116,7 +116,7 @@ const ManageVehiclesPage = () => {
 
     } catch (error) {
       console.error("Error adding vehicle:", error.message);
-      alert("Failed to add vehicle.");
+      alert("Failed to add vehicle. The plate number of the vehicle already exists");
     } finally {
       setSubmitting(false);
     }

@@ -1,16 +1,24 @@
 // File: src/components/ReturnRentalModal.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { generateInvoicePDF } from '../utils/InvoiceGenerator'; // <-- Import your new file
+import { generateInvoicePDF } from '../utils/InvoiceGenerator'; 
+import { dataURLtoFile } from '../utils/pdfHelper'; // Import the helper from your utils
 import { v4 as uuidv4 } from 'uuid';
-import './ReturnRentalModal.css'; // You can create a simple CSS file for this
+import SignatureCanvas from 'react-signature-canvas'; 
+import './ReturnRentalModal.css'; 
 
 const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
+  const sigPad = useRef(null);
   
-  // Form State
-  const [returnDate, setReturnDate] = useState(new Date().toISOString().split('T')[0]);
+  // Initialize with Current Date AND Time (local ISO format)
+  // Format: YYYY-MM-DDTHH:MM
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  const defaultDateTime = now.toISOString().slice(0, 16);
+
+  const [returnDateTime, setReturnDateTime] = useState(defaultDateTime);
   const [endMileage, setEndMileage] = useState('');
   const [damageCost, setDamageCost] = useState(0);
   const [remarks, setRemarks] = useState('');
@@ -32,7 +40,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     const startMil = parseFloat(rental.start_mileage) || 0;
     const endMil = parseFloat(endMileage) || startMil;
     const driven = endMil - startMil;
-    const allowedKm = (rental.rental_days * (car.km_limit_per_day || 100)); // Default 100 if null
+    const allowedKm = (rental.rental_days * (car.km_limit_per_day || 100)); 
     
     let extraKm = 0;
     if (driven > allowedKm) {
@@ -40,28 +48,25 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     }
     const extraKmCost = extraKm * (car.extra_km_price || 0);
 
-    // B. Time/Late Fee Calc
-    // Logic: Compare Selected Return Date vs Expected End Date
-    // For simplicity, this example calculates manual late hours if needed, 
-    // or we can just automate it based on dates. 
-    // Let's assume 0 late hours for now unless you add a 'Late Hours' input, 
-    // OR calculate based on dates:
-    const expectedEnd = new Date(rental.rental_start_date);
-    expectedEnd.setDate(expectedEnd.getDate() + rental.rental_days);
-    const actualReturn = new Date(returnDate);
+    // B. Time/Late Fee Calc (Specific Hourly Calculation)
+    const startDate = new Date(rental.rental_start_date);
+    // Expected return time is Start Date + Rental Days (at the same time it started)
+    const expectedReturnDate = new Date(startDate);
+    expectedReturnDate.setDate(startDate.getDate() + rental.rental_days);
     
-    // Calculate difference in hours (rough estimate)
+    const actualReturnDate = new Date(returnDateTime);
+
     let lateHours = 0;
-    const diffTime = actualReturn - expectedEnd;
-    if (diffTime > 0) {
-      lateHours = Math.ceil(diffTime / (1000 * 60 * 60)); 
-      // If it's just 1 day late, it might show 24 hours. Adjust logic as needed.
+    // Calculate difference in milliseconds
+    const diffMs = actualReturnDate - expectedReturnDate;
+    
+    if (diffMs > 0) {
+      // Convert ms to hours (Math.ceil to charge for part of an hour)
+      lateHours = Math.ceil(diffMs / (1000 * 60 * 60));
     }
     const lateFeeCost = lateHours * (car.late_fee_per_hour || 0);
 
     // C. Final Total
-    // Base Rental Cost was already agreed. We only add extras here.
-    // Total = (Base Cost) + (Extra Km) + (Late Fee) + (Damages) - (Advance)
     const baseCost = rental.rental_days * (car.daily_rate || 0);
     const subTotal = baseCost + extraKmCost + lateFeeCost + parseFloat(damageCost);
     const finalDue = subTotal - (rental.advance_payment || 0);
@@ -74,67 +79,87 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
       totalDue: finalDue
     });
 
-  }, [endMileage, returnDate, damageCost, rental, car]);
+  }, [endMileage, returnDateTime, damageCost, rental, car]);
 
 
   // --- 2. Handle Submit ---
   const handleConfirmReturn = async () => {
     if (!endMileage) return alert("Please enter ending mileage");
+    if (sigPad.current.isEmpty()) return alert("Customer signature is required to return.");
     
     setLoading(true);
     try {
-      // A. Generate Invoice PDF
+      // A. Upload Signature First
+      const sigDataUrl = sigPad.current.toDataURL('image/png');
+      const sigFile = dataURLtoFile(sigDataUrl, `return-sig-${rental.id}.png`);
+      const sigFileName = `${uuidv4()}-return-sig.png`;
+      
+      const { error: sigError } = await supabase.storage
+        .from('signatures')
+        .upload(sigFileName, sigFile);
+      
+      if (sigError) throw sigError;
+      
+      const { data: sigUrlData } = supabase.storage
+        .from('signatures')
+        .getPublicUrl(sigFileName);
+      
+      const signaturePublicUrl = sigUrlData.publicUrl;
+
+      // B. Generate Invoice PDF (Pass signature URL)
       const returnData = {
-        returnDate,
+        returnDate: returnDateTime,
         endMileage,
         extraKm: calculations.extraKm,
         lateHours: calculations.lateHours,
         damageCost: parseFloat(damageCost),
-        finalTotal: calculations.totalDue
+        finalTotal: calculations.totalDue,
+        signatureUrl: sigDataUrl // Pass Base64 for PDF generation (faster)
       };
 
       console.log("Generating Invoice...");
       const invoiceFile = await generateInvoicePDF(rental, car, returnData);
       
-      // B. Upload Invoice
-      const fileName = `invoice-${rental.id}-${uuidv4()}.pdf`;
+      // C. Upload Invoice
+      const invFileName = `invoice-${rental.id}-${uuidv4()}.pdf`;
       const { error: uploadError } = await supabase.storage
-        .from('invoices') // Make sure you create this bucket!
-        .upload(fileName, invoiceFile);
+        .from('invoices')
+        .upload(invFileName, invoiceFile);
 
       if (uploadError) throw uploadError;
 
       const { data: publicUrlData } = supabase.storage
         .from('invoices')
-        .getPublicUrl(fileName);
+        .getPublicUrl(invFileName);
 
-      // C. Update Rental Record (Close it)
+      // D. Update Rental Record (Close it)
       const { error: updateError } = await supabase
         .from('rentals')
         .update({
           status: 'completed',
-          return_date: returnDate,
+          return_date: returnDateTime,
           end_mileage: endMileage,
           final_total_cost: calculations.totalDue,
+          extra_mileage_cost: calculations.extraKmCost,
           return_invoice_pdf_url: publicUrlData.publicUrl,
+          return_signature_url: signaturePublicUrl, // Save signature URL to DB
           remarks_return: remarks
         })
         .eq('id', rental.id);
 
       if (updateError) throw updateError;
 
-      // D. Update Car Status (Free it up)
+      // E. Update Car Status
       const { error: carError } = await supabase
         .from('vehicles')
         .update({ 
           status: 'Available',
-          current_mileage: endMileage // Update car's mileage
+          current_mileage: endMileage
         })
         .eq('id', car.id);
 
       if (carError) throw carError;
 
-      // Success!
       onSuccess();
 
     } catch (error) {
@@ -145,17 +170,21 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     }
   };
 
+  const clearSignature = () => sigPad.current.clear();
+
   return (
     <div className="modal-overlay">
       <div className="modal-content">
         <h2>Return Vehicle: {car.name}</h2>
         
+        {/* Date & Time Picker */}
         <div className="form-group">
-          <label>Return Date</label>
+          <label>Return Date & Time</label>
           <input 
-            type="date" 
-            value={returnDate} 
-            onChange={(e) => setReturnDate(e.target.value)} 
+            type="datetime-local" 
+            value={returnDateTime} 
+            onChange={(e) => setReturnDateTime(e.target.value)} 
+            style={{fontSize: '16px', padding: '8px'}}
           />
         </div>
 
@@ -186,13 +215,26 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
           />
         </div>
 
-        {/* --- COST SUMMARY --- */}
-        <div className="summary-box" style={{background: '#f9f9f9', padding: '15px', borderRadius: '8px', marginTop: '10px'}}>
+        {/* Return Signature */}
+        <label style={{marginTop: '10px', display: 'block', fontWeight: 'bold'}}>Return Signature (Customer)</label>
+        <div className="signature-box" style={{border: '1px dashed #000', borderRadius: '5px', background: '#fff'}}>
+          <SignatureCanvas 
+            ref={sigPad}
+            penColor='black'
+            canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '120px'} }} 
+          />
+        </div>
+        <button type="button" onClick={clearSignature} style={{marginTop: '5px', fontSize: '0.8rem', padding: '5px'}}>
+          Clear Signature
+        </button>
+
+        {/* Cost Summary */}
+        <div className="summary-box" style={{background: '#f9f9f9', padding: '15px', borderRadius: '8px', marginTop: '15px'}}>
           <p><strong>Extra Km:</strong> {calculations.extraKm} km (+ LKR {calculations.extraKmCost.toFixed(2)})</p>
           <p><strong>Late Hours:</strong> {calculations.lateHours} hrs (+ LKR {calculations.lateFeeCost.toFixed(2)})</p>
           <p><strong>Base Rental:</strong> LKR {(rental.rental_days * car.daily_rate).toFixed(2)}</p>
           <p><strong>Less Advance:</strong> - LKR {rental.advance_payment}</p>
-          <h3 style={{borderTop: '1px solid #ccc', paddingTop: '10px', marginTop: '10px'}}>
+          <h3 style={{borderTop: '1px solid #ccc', paddingTop: '10px', marginTop: '10px', color: '#d9534f'}}>
             Final Balance Due: LKR {calculations.totalDue.toFixed(2)}
           </h3>
         </div>
@@ -205,7 +247,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
             disabled={loading}
             style={{background: '#28a745', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '5px'}}
           >
-            {loading ? 'Processing Invoice...' : 'Confirm Return & Create Invoice'}
+            {loading ? 'Processing...' : 'Confirm Return & Close'}
           </button>
         </div>
 

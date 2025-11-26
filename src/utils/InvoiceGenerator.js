@@ -1,10 +1,9 @@
 // File: src/utils/InvoiceGenerator.js
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { v4 as uuidv4 } from 'uuid';
 
 export const generateInvoicePDF = async (rental, car, returnData) => {
-  // returnData contains: { returnDate, endMileage, extraKm, lateHours, damageCost, finalTotal }
+  // returnData contains: { returnDate, endMileage, extraKm, lateHours, damageCost, finalTotal, signatureUrl }
 
   // 1. Define Styles
   const styles = {
@@ -16,7 +15,8 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
     th: "background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 1px solid #ddd; font-weight: bold;",
     td: "padding: 12px; border-bottom: 1px solid #eee;",
     totalRow: "font-weight: bold; background: #f8f9fa;",
-    footer: "margin-top: 50px; text-align: center; font-size: 12px; color: #777;"
+    footer: "margin-top: 50px; text-align: center; font-size: 12px; color: #777;",
+    signatureSection: "margin-top: 40px; text-align: right;"
   };
 
   // 2. Create HTML Content
@@ -30,8 +30,8 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
           <div>Date: ${new Date().toLocaleDateString()}</div>
         </div>
         <div style="${styles.companyInfo}">
-          <strong>Your Rental Company Name</strong><br>
-          123 Main Street, Matara<br>
+          <strong>Yalu Tours</strong><br>
+          Matara, Sri Lanka<br>
           Tel: +94 77 123 4567
         </div>
       </div>
@@ -46,9 +46,8 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
       <div style="margin-bottom: 20px;">
         <strong>Vehicle Details:</strong><br>
         ${car.name} (${car.plate_number})<br>
-        Rented: ${new Date(rental.rental_start_date).toLocaleDateString()}<br>
-        Returned: ${new Date(returnData.returnDate).toLocaleDateString()}
-      </div>
+        Rented: ${new Date(rental.rental_start_date).toLocaleString()}<br>
+        Returned: ${new Date(returnData.returnDate).toLocaleString()} </div>
 
       <table style="${styles.table}">
         <thead>
@@ -108,8 +107,14 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
         </tbody>
       </table>
 
+      <div style="${styles.signatureSection}">
+        <p><strong>Customer Signature (Return):</strong></p>
+        ${returnData.signatureUrl ? `<img src="${returnData.signatureUrl}" width="200" style="border-bottom: 1px solid #ccc;"/>` : ''}
+        <p>${rental.customer_name}</p>
+      </div>
+
       <div style="${styles.footer}">
-        <p>Thank you for your business!</p>
+        <p>Thank you for using Yalu Tours!</p>
         <p>System Generated Invoice</p>
       </div>
 
@@ -124,7 +129,6 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
   container.style.top = '0';
   document.body.appendChild(container);
 
-  // Wait for rendering
   await new Promise(r => setTimeout(r, 100));
 
   const canvas = await html2canvas(container.firstElementChild, {
@@ -134,7 +138,6 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
 
   document.body.removeChild(container);
 
-  // 4. Convert to PDF Blob
   const imgData = canvas.toDataURL('image/png');
   const pdf = new jsPDF('p', 'pt', 'a4');
   const pdfWidth = pdf.internal.pageSize.getWidth();

@@ -1,56 +1,154 @@
-/* For src/components/PhotoViewerModal.css */
+/* File: src/components/PhotoViewerModal.css */
 
-.photo-modal {
-  max-width: 90vw; /* Make it wide */
-  width: 1000px;
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
 }
 
-.photo-grid {
+.photo-modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 900px;
+  height: 85vh; /* Fixed height for modal */
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column; /* Allows scrolling only on the grid part */
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* --- Header --- */
+.photo-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #f8f9fa;
+}
+
+.photo-modal-header h2 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.close-btn-modal {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+}
+
+/* --- Reference Info --- */
+.reference-info {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ref-tag {
+  background: #e9ecef;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+.ref-link {
+  text-decoration: none;
+  color: #007bff;
+  font-weight: 500;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border: 1px solid #cce5ff;
+  border-radius: 4px;
+  background: #f0f7ff;
+  transition: all 0.2s;
+}
+
+.ref-link:hover {
+  background: #007bff;
+  color: #fff;
+}
+
+/* --- Action Bar --- */
+.photo-actions {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.download-pdf-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.download-pdf-btn:hover {
+  background-color: #218838;
+}
+
+.download-pdf-btn:disabled {
+  background-color: #94d3a2;
+  cursor: not-allowed;
+}
+
+/* --- Photos Grid (Scrollable Area) --- */
+.photos-grid {
+  flex: 1; /* Takes remaining height */
+  overflow-y: auto; /* Scroll ONLY photos */
+  padding: 1.5rem;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 15px;
-  max-height: 70vh; /* Make the body scrollable */
-  overflow-y: auto;
-  padding: 10px;
-  background: #f4f4f4;
-  border-radius: 8px;
-}
-
-.photo-item {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  display: flex;
-  flex-direction: column;
-}
-
-.photo-item a {
-  display: block;
-  width: 100%;
-  height: 150px; /* Fixed height for the image area */
-  overflow: hidden;
-}
-
-.photo-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* Crop images to fit the box */
-  transition: transform 0.2s;
-}
-
-.photo-item a:hover img {
-  transform: scale(1.05);
-}
-
-.photo-item p {
-  text-align: center;
-  padding: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #333;
-  margin: 0;
+  gap: 20px;
   background: #fafafa;
-  border-top: 1px solid #eee;
+}
+
+.photo-card {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.photo-label {
+  margin: 0;
+  padding: 8px;
+  background: #f1f3f5;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.photo-card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
+  transition: opacity 0.2s;
+}
+
+.photo-card img:hover {
+  opacity: 0.9;
 }
