@@ -1,12 +1,10 @@
 // File: src/utils/InvoiceGenerator.js
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import YaluToursLogo from '../assets/yalu-tours-logo.png'; // <--- 1. Import Logo
+import YaluToursLogo from '../assets/yalu-tours-logo.png'; 
+import CompanySeal from '../assets/seal.png'; // <--- NEW IMPORT
 
 export const generateInvoicePDF = async (rental, car, returnData) => {
-  // returnData contains: { returnDate, endMileage, extraKm, lateHours, damageCost, finalTotal, signatureUrl }
-
-  // 1. Define Styles
   const styles = {
     container: "font-family: Arial, sans-serif; padding: 40px; background: #fff; width: 794px; color: #333;",
     header: "display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px;",
@@ -17,13 +15,11 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
     td: "padding: 12px; border-bottom: 1px solid #eee;",
     totalRow: "font-weight: bold; background: #f8f9fa;",
     footer: "margin-top: 50px; text-align: center; font-size: 12px; color: #777;",
-    signatureSection: "margin-top: 40px; text-align: right;"
+    signatureSection: "margin-top: 40px; text-align: right; display: flex; flex-direction: column; align-items: flex-end;"
   };
 
-  // 2. Create HTML Content
   const invoiceHTML = `
     <div style="${styles.container}">
-      
       <div style="${styles.header}">
         <div>
           <div style="${styles.invoiceTitle}">INVOICE</div>
@@ -32,9 +28,11 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
         </div>
         <div style="${styles.companyInfo}">
           <img src="${YaluToursLogo}" style="height: 60px; margin-bottom: 10px;" alt="Yalu Tours" /><br>
-          <strong>Yalu Tours</strong><br>
-          Matara, Sri Lanka<br>
-          Tel: +94 77 266 7000
+          <strong>Yalu Tours And Rent A Car</strong><br>
+          Polpitiyawatta,<br>
+          Rassandeniya,
+          Dondra<br>
+          Tel: +94 77 266 7000 / +94 71 165 0500
         </div>
       </div>
 
@@ -68,7 +66,6 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
             <td style="${styles.td}">${rental.rental_days} days</td>
             <td style="${styles.td}">${(car.daily_rate * rental.rental_days).toFixed(2)}</td>
           </tr>
-
           ${returnData.extraKm > 0 ? `
           <tr>
             <td style="${styles.td}">Extra Mileage Charge</td>
@@ -76,7 +73,6 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
             <td style="${styles.td}">${returnData.extraKm} km</td>
             <td style="${styles.td}">${(returnData.extraKm * car.extra_km_price).toFixed(2)}</td>
           </tr>` : ''}
-
           ${returnData.lateHours > 0 ? `
           <tr>
             <td style="${styles.td}">Late Fee</td>
@@ -84,7 +80,6 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
             <td style="${styles.td}">${returnData.lateHours} hrs</td>
             <td style="${styles.td}">${(returnData.lateHours * (car.late_fee_per_hour || car.extra_hourly_rate)).toFixed(2)}</td>
           </tr>` : ''}
-
           ${returnData.damageCost > 0 ? `
           <tr>
             <td style="${styles.td}">Damages / Repair Costs</td>
@@ -92,17 +87,14 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
             <td style="${styles.td}">1</td>
             <td style="${styles.td}">${parseFloat(returnData.damageCost).toFixed(2)}</td>
           </tr>` : ''}
-
           <tr>
             <td style="${styles.td}" colspan="3" align="right"><strong>Subtotal</strong></td>
             <td style="${styles.td}"><strong>${(returnData.finalTotal + (rental.advance_payment || 0)).toFixed(2)}</strong></td>
           </tr>
-
           <tr>
             <td style="${styles.td}; color: red;" colspan="3" align="right">Less: Advance Payment</td>
             <td style="${styles.td}; color: red;">- ${(rental.advance_payment || 0).toFixed(2)}</td>
           </tr>
-
           <tr style="${styles.totalRow}">
             <td style="${styles.td}" colspan="3" align="right" style="font-size: 18px;">TOTAL DUE</td>
             <td style="${styles.td}" style="font-size: 18px;">LKR ${returnData.finalTotal.toFixed(2)}</td>
@@ -111,43 +103,31 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
       </table>
 
       <div style="${styles.signatureSection}">
-        <p><strong>Customer Signature (Return):</strong></p>
-        ${returnData.signatureUrl ? `<img src="${returnData.signatureUrl}" width="150" style="border-bottom: 1px solid #ccc;"/>` : ''}
-        <p>${rental.customer_name}</p>
+        <img src="${CompanySeal}" width="260" style="margin-bottom: 5px; opacity: 0.8;" alt="Company Seal"/>
+        <p style="border-top: 1px solid #ccc; padding-top: 5px; width: 200px; text-align: center;">Authorized Signature</p>
       </div>
 
       <div style="${styles.footer}">
         <p>Thank you for using Yalu Tours!</p>
         <p>System Generated Invoice</p>
       </div>
-
     </div>
   `;
 
-  // 3. Render & Capture
+  // Render & Capture Logic (Unchanged)
   const container = document.createElement('div');
   container.innerHTML = invoiceHTML;
   container.style.position = 'absolute';
   container.style.left = '-9999px';
   container.style.top = '0';
   document.body.appendChild(container);
-
-  // Allow images to load
   await new Promise(r => setTimeout(r, 200));
-
-  const canvas = await html2canvas(container.firstElementChild, {
-    scale: 2,
-    useCORS: true,
-  });
-
+  const canvas = await html2canvas(container.firstElementChild, { scale: 2, useCORS: true });
   document.body.removeChild(container);
-
   const imgData = canvas.toDataURL('image/png');
   const pdf = new jsPDF('p', 'pt', 'a4');
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
   pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
   return new File([pdf.output('blob')], `Invoice_${rental.customer_name}.pdf`, { type: 'application/pdf' });
 };

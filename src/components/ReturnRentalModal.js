@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { generateInvoicePDF } from '../utils/InvoiceGenerator'; 
+import { generateReturnAgreementPDF } from '../utils/ReturnAgreementGenerator'; // <--- NEW IMPORT
 import { dataURLtoFile } from '../utils/pdfHelper'; 
 import { v4 as uuidv4 } from 'uuid';
 import SignatureCanvas from 'react-signature-canvas'; 
-import './ReturnRentalModal.css'; 
+import './ReturnRentalModal.css';
 
 const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -88,10 +89,10 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     if (sigPad.current.isEmpty()) return alert("Customer signature is required to return.");
     
     setLoading(true);
-    setStatusMsg('Starting Return... 🚀'); // Start status
+    setStatusMsg('Starting Return... 🚀'); 
 
     try {
-      // A. Upload Signature
+      // A. Upload Signature (Customer)
       setStatusMsg('Saving Signature... ✍️');
       const sigDataUrl = sigPad.current.toDataURL('image/png');
       const sigFile = dataURLtoFile(sigDataUrl, `return-sig-${rental.id}.png`);
@@ -103,14 +104,10 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
       
       if (sigError) throw sigError;
       
-      const { data: sigUrlData } = supabase.storage
-        .from('signatures')
-        .getPublicUrl(sigFileName);
-      
+      const { data: sigUrlData } = supabase.storage.from('signatures').getPublicUrl(sigFileName);
       const signaturePublicUrl = sigUrlData.publicUrl;
 
-      // B. Generate Invoice PDF
-      setStatusMsg('Generating Invoice... 🧾');
+      // Common Return Data
       const returnData = {
         returnDate: returnDateTime,
         endMileage,
@@ -118,23 +115,26 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
         lateHours: calculations.lateHours,
         damageCost: parseFloat(damageCost),
         finalTotal: calculations.totalDue,
-        signatureUrl: sigDataUrl 
+        signatureUrl: sigDataUrl // Raw Base64 for PDF generation
       };
 
+      // B. Generate & Upload Invoice (Now with Seal)
+      setStatusMsg('Generating Invoice... 🧾');
       const invoiceFile = await generateInvoicePDF(rental, car, returnData);
-      
-      // C. Upload Invoice
-      setStatusMsg('Uploading Invoice... ☁️');
       const invFileName = `invoice-${rental.id}-${uuidv4()}.pdf`;
-      const { error: uploadError } = await supabase.storage
-        .from('invoices')
-        .upload(invFileName, invoiceFile);
+      
+      await supabase.storage.from('invoices').upload(invFileName, invoiceFile);
+      const { data: invUrlData } = supabase.storage.from('invoices').getPublicUrl(invFileName);
 
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrlData } = supabase.storage
-        .from('invoices')
-        .getPublicUrl(invFileName);
+      // C. Generate & Upload Return Agreement (NEW)
+      setStatusMsg('Generating Return Doc... 📄');
+      const returnDocFile = await generateReturnAgreementPDF(rental, car, returnData);
+      const returnDocName = `return-doc-${rental.id}-${uuidv4()}.pdf`;
+      
+      // Note: Storing in 'agreements' bucket, or create a 'return-docs' bucket if preferred
+      await supabase.storage.from('agreements').upload(returnDocName, returnDocFile);
+      // We don't strictly need to save this URL to a column if we don't have one, 
+      // but it's good practice to log it or save to a 'return_agreement_url' column if you add one later.
 
       // D. Update Database
       setStatusMsg('Updating Database... 💾');
@@ -146,7 +146,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
           end_mileage: endMileage,
           final_total_cost: calculations.totalDue,
           extra_mileage_cost: calculations.extraKmCost,
-          return_invoice_pdf_url: publicUrlData.publicUrl,
+          return_invoice_pdf_url: invUrlData.publicUrl,
           return_signature_url: signaturePublicUrl, 
           remarks_return: remarks
         })
@@ -155,30 +155,20 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
       if (updateError) throw updateError;
 
       // E. Update Car Status
-      const { error: carError } = await supabase
-        .from('vehicles')
-        .update({ 
-          status: 'Available',
-          current_mileage: endMileage
-        })
-        .eq('id', car.id);
+      await supabase.from('vehicles').update({ status: 'Available', current_mileage: endMileage }).eq('id', car.id);
 
-      if (carError) throw carError;
-
-      // F. Send SMS
+      // F. Send SMS (Invoice Link)
       setStatusMsg('Sending SMS... 📲');
       try {
         await supabase.functions.invoke('send-local-sms', {
           body: { 
             customerPhone: rental.customer_phone, 
             customerName: rental.customer_name,
-            link: publicUrlData.publicUrl, 
+            link: invUrlData.publicUrl, // Send Invoice
             type: 'return' 
           }
         });
-      } catch (smsError) {
-        console.warn("Invoice SMS Failed:", smsError);
-      }
+      } catch (smsError) { console.warn("SMS Failed", smsError); }
 
       setStatusMsg('Done! ✅');
       onSuccess();
@@ -186,7 +176,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     } catch (error) {
       console.error("Error returning vehicle:", error);
       alert("Error: " + error.message);
-      setStatusMsg(''); // Clear status on error
+      setStatusMsg('');
     } finally {
       setLoading(false);
     }
