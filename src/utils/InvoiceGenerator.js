@@ -32,7 +32,7 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
         <div style="${styles.companyInfo}">
           <strong>Yalu Tours</strong><br>
           Matara, Sri Lanka<br>
-          Tel: +94 77 123 4567
+          Tel: +94 77 266 7000
         </div>
       </div>
 
@@ -77,9 +77,9 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
           ${returnData.lateHours > 0 ? `
           <tr>
             <td style="${styles.td}">Late Fee</td>
-            <td style="${styles.td}">${car.late_fee_per_hour} / hr</td>
+            <td style="${styles.td}">${car.extra_hourly_fee} / hr</td>
             <td style="${styles.td}">${returnData.lateHours} hrs</td>
-            <td style="${styles.td}">${(returnData.lateHours * car.late_fee_per_hour).toFixed(2)}</td>
+            <td style="${styles.td}">${(returnData.lateHours * car.extra_hourly_fee).toFixed(2)}</td>
           </tr>` : ''}
 
           ${returnData.damageCost > 0 ? `

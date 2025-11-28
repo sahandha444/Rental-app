@@ -1,3 +1,4 @@
+// File: src/utils/pdfHelper.js
 import { v4 as uuidv4 } from 'uuid';
 
 export function dataURLtoFile(dataurl, filename) {
@@ -29,29 +30,26 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   clone.style.maxHeight = "none";
   clone.style.overflow = "visible";
 
-  // 3. Append Signature
-  const sigWrapper = document.createElement("div");
-  sigWrapper.style.marginTop = "40px"; 
-  const label = document.createElement("div");
-  label.textContent = "Customer Signature / පාරිභෝගික අත්සන:";
-  label.style.fontSize = "14px";
-  label.style.fontWeight = "bold";
-  label.style.marginBottom = "10px";
-  sigWrapper.appendChild(label);
-  
-  // Use PNG for the signature (High quality, transparent)
-  const sigImg = document.createElement("img");
-  sigImg.src = signatureCanvas.toDataURL('image/png'); 
-  sigImg.style.width = "200px"; 
-  sigImg.style.height = "auto";
-  sigWrapper.appendChild(sigImg);
-  
-  const customer = document.createElement("div");
-  customer.textContent = formData.customerName;
-  customer.style.marginTop = "5px";
-  customer.style.fontSize = "14px";
-  sigWrapper.appendChild(customer);
-  clone.appendChild(sigWrapper);
+  // 3. INJECT SIGNATURE INTO PLACEHOLDER (New Logic)
+  // Find the specific placeholder div we added in RentalStep3
+  const sigPlaceholder = clone.querySelector('#customer-sig-placeholder');
+
+  if (sigPlaceholder && !signatureCanvas.isEmpty()) {
+    const sigImg = document.createElement("img");
+    sigImg.src = signatureCanvas.toDataURL('image/png'); // PNG for transparency
+    
+    // Style it to fit perfectly on the line
+    sigImg.style.maxHeight = "60px"; // Fit height
+    sigImg.style.maxWidth = "100%";  // Fit width
+    sigImg.style.position = "absolute"; 
+    sigImg.style.bottom = "5px"; // Sit nicely on the dotted line
+    sigImg.style.left = "50%";
+    sigImg.style.transform = "translateX(-50%)"; // Center it
+    
+    sigPlaceholder.appendChild(sigImg);
+  } else {
+    console.warn("Signature placeholder not found or empty signature.");
+  }
 
   // 4. Render Offscreen
   const container = document.createElement("div");
@@ -67,7 +65,7 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   await new Promise(r => setTimeout(r, 100));
 
   const canvas = await html2canvas(clone, {
-    scale: 1.5, // Kept at 1.5 for balance, but you can set to 2 for ultra-sharpness
+    scale: 1.5,
     useCORS: true,
     backgroundColor: "#ffffff",
     width: 794,
@@ -80,8 +78,7 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
 
   document.body.removeChild(container);
 
-  // 5. Generate PDF using PNG
-  // <--- CHANGED BACK TO PNG
+  // 5. Generate PDF
   const imgData = canvas.toDataURL("image/png"); 
   
   const pdf = new jsPDF("p", "pt", "a4");
@@ -95,7 +92,6 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   let heightLeft = pdfHeight;
   let position = 0;
 
-  // Add pages (PNG format)
   pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
   heightLeft -= pageHeight;
 

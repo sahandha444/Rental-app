@@ -62,9 +62,9 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     
     if (diffMs > 0) {
       // Convert ms to hours (Math.ceil to charge for part of an hour)
-      lateHours = Math.ceil(diffMs / (1000 * 60 * 60));
+      lateHours = Math.floor(diffMs / (1000 * 60 * 60));
     }
-    const lateFeeCost = lateHours * (car.late_fee_per_hour || 0);
+    const lateFeeCost = lateHours * (car.extra_hourly_rate || 0);
 
     // C. Final Total
     const baseCost = rental.rental_days * (car.daily_rate || 0);
@@ -159,6 +159,22 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
         .eq('id', car.id);
 
       if (carError) throw carError;
+
+      // --- 🆕 F. SEND INVOICE SMS ---
+      try {
+        console.log("Sending Invoice SMS...");
+        await supabase.functions.invoke('send-local-sms', {
+          body: { 
+            customerPhone: rental.customer_phone, // Get phone from rental object
+            customerName: rental.customer_name,
+            link: publicUrlData.publicUrl, // Use the public Invoice URL
+            type: 'return' // <--- Tells the backend to send the "Return/Invoice" message
+          }
+        });
+      } catch (smsError) {
+        console.warn("Invoice SMS Failed:", smsError);
+        // Don't block the UI success if SMS fails
+      }
 
       onSuccess();
 

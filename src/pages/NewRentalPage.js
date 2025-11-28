@@ -9,14 +9,14 @@ import './NewRentalPage.css';
 import { generateAgreementPDF, dataURLtoFile } from '../utils/pdfHelper';
 import { RentalStep1, RentalStep2, RentalStep3 } from '../components/RentalSteps';
 
-// --- ⚡ FASTER COMPRESSION SETTINGS ---
+// --- COMPRESSION HELPER ---
 const compressImage = async (file) => {
   if (!file) return null;
   const options = {
-    maxSizeMB: 0.6,           // <--- Lowered to 0.6MB for speed
-    maxWidthOrHeight: 1280,   // <--- Lowered to 1280px (Standard HD) is faster to process
-    useWebWorker: true,       
-    initialQuality: 0.7,      // <--- Start with slightly lower quality to speed up initial pass
+    maxSizeMB: 0.6,
+    maxWidthOrHeight: 1280,
+    useWebWorker: true,
+    initialQuality: 0.7,
   };
   try {
     return await imageCompression(file, options);
@@ -37,10 +37,7 @@ const NewRentalPage = () => {
   const [car, setCar] = useState(null); 
   const [loading, setLoading] = useState(true); 
   const [submitting, setSubmitting] = useState(false); 
-  
-  // 🆕 NEW: Status Message State
   const [statusMsg, setStatusMsg] = useState(''); 
-  
   const [error, setError] = useState(null); 
   const [pastCustomers, setPastCustomers] = useState([]);
 
@@ -106,46 +103,7 @@ const NewRentalPage = () => {
     }
   };
 
-// --- Validation & Navigation ---
-  const nextStep = () => {
-    // Validate Step 1: Customer Details
-    if (step === 1) {
-      // Check for License photos (New Upload OR Existing from search)
-      const hasLicenseFront = formData.licensePhotoFront || formData.existingLicenseFront;
-      const hasLicenseBack = formData.licensePhotoBack || formData.existingLicenseBack;
-
-      if (!formData.customerName || !formData.customerID || !formData.customerPhone || !formData.customerAddress) {
-        showFormError("Please fill in all Customer Details.");
-        return;
-      }
-      if (!hasLicenseFront || !hasLicenseBack) {
-        showFormError("Driver's License photos (Front & Back) are required.");
-        return;
-      }
-    }
-
-    // Validate Step 2: Rental Details
-    if (step === 2) {
-       if (!formData.rentalDays || !formData.startMileage || !formData.advancePayment) {
-        showFormError("Please enter Rental Days,Start Mileage and Advance Payment.");
-        return;
-      }
-      if (!formData.mileagePhoto) {
-        showFormError("A photo of the dashboard mileage is required.");
-        return;
-      }
-    }
-
-    // If validation passes, go to next step
-    setError(null); 
-    setStep(s => s + 1);
-  };
-
-  const showFormError = (message) => {
-    setError(message);
-    window.scrollTo(0, 0); 
-  };
-
+  const nextStep = () => setStep(s => s + 1);
   const prevStep = () => setStep(s => s - 1);
   const clearSignature = () => sigPad.current.clear();
 
@@ -155,7 +113,7 @@ const NewRentalPage = () => {
     if (sigPad.current.isEmpty()) return alert("Signature required.");
     
     setSubmitting(true);
-    setStatusMsg('Preparing...'); // Start status
+    setStatusMsg('Preparing...'); 
     
     try {
       const uploadFile = async (file, folder) => {
@@ -168,14 +126,8 @@ const NewRentalPage = () => {
 
       // 1. Compression
       setStatusMsg('Compressing Photos... 📸');
-      
       const [
-        cmpLicenseFront, 
-        cmpLicenseBack, 
-        cmpIdFront, 
-        cmpIdBack, 
-        cmpMileage,
-        cmpExtraPhotos
+        cmpLicenseFront, cmpLicenseBack, cmpIdFront, cmpIdBack, cmpMileage, cmpExtraPhotos
       ] = await Promise.all([
         compressImage(formData.licensePhotoFront),
         compressImage(formData.licensePhotoBack),
@@ -187,7 +139,6 @@ const NewRentalPage = () => {
 
       // 2. Uploading
       setStatusMsg('Uploading Files... ☁️');
-
       const [lf, lb, if_, ib, mp, sigFile] = await Promise.all([
         uploadFile(cmpLicenseFront, 'licenses'), 
         uploadFile(cmpLicenseBack, 'licenses'),
@@ -196,19 +147,16 @@ const NewRentalPage = () => {
         uploadFile(cmpMileage, 'mileage-photos'),
         dataURLtoFile(sigPad.current.toDataURL('image/png'), `${uuidv4()}-signature.png`) 
       ]);
-      
       const sigUrl = await uploadFile(sigFile, 'signatures');
-
-      const extraPhotos = await Promise.all(
-        cmpExtraPhotos.map(f => uploadFile(f, 'car-conditions'))
-      );
+      const extraPhotos = await Promise.all(cmpExtraPhotos.map(f => uploadFile(f, 'car-conditions')));
 
       // 3. PDF Generation
       setStatusMsg('Creating Agreement... 📄');
-      const pdfFile = await generateAgreementPDF(agreementBoxRef.current, sigPad.current.getCanvas(), formData);
+      // Pass sigPad.current directly
+      const pdfFile = await generateAgreementPDF(agreementBoxRef.current, sigPad.current, formData);
       const pdfUrl = await uploadFile(pdfFile, 'agreements');
 
-      // 4. Saving
+      // 4. Saving to Database
       setStatusMsg('Finalizing... 💾');
       await supabase.from('rentals').insert([{ 
           car_id: car.id, car_name: car.name,
@@ -227,9 +175,17 @@ const NewRentalPage = () => {
       
       await supabase.from('vehicles').update({ status: 'Rented', current_mileage: formData.startMileage }).eq('id', car.id);
       
+      // 5. Send SMS
+      // We send the 'pdfUrl' (Long Link) and the backend handles the shortening.
       try {
         await supabase.functions.invoke('send-local-sms', {
-          body: { customerPhone: formData.customerPhone, customerName: formData.customerName, agreementUrl: pdfUrl }
+          body: { 
+            customerPhone: formData.customerPhone,
+            customerName: formData.customerName,
+            agreementUrl: pdfUrl, // <--- Backend will shorten this!
+            link: pdfUrl, // Send as 'link' too for compatibility with new backend
+            type: 'agreement'
+          }
         });
       } catch (e) { console.warn("SMS Error", e); }
 
@@ -238,7 +194,7 @@ const NewRentalPage = () => {
     } catch (err) {
       console.error(err);
       alert("Submission Failed: " + err.message);
-      setStatusMsg(''); // Clear status on error
+      setStatusMsg('');
     } finally {
       setSubmitting(false);
     }
@@ -256,7 +212,6 @@ const NewRentalPage = () => {
         {step === 3 && <RentalStep3 formData={formData} car={car} totalCost={(formData.rentalDays * (car.daily_rate || 0)).toFixed(2)} agreementBoxRef={agreementBoxRef} sigPadRef={sigPad} clearSignature={clearSignature} prevStep={prevStep} submitting={submitting} />}
       </form>
       
-      {/* 🆕 NEW: Loading Status Indicator */}
       {submitting && (
         <div style={{
           position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
