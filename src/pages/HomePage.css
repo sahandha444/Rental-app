@@ -2,37 +2,37 @@
 .home-container {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 3rem 1.5rem; /* Increased padding for the whole page */
+  padding: 1rem;
   text-align: center;
+  /* Center content vertically in the available window space */
+  min-height: calc(100vh - 80px); 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* --- Header Section --- */
 .home-header h1 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   color: var(--text-color);
   margin-bottom: 0.5rem;
+  margin-top: 0;
 }
 
 .home-header p {
   color: var(--text-muted);
-  font-size: 1.2rem;
-  margin-bottom: 3rem;
+  font-size: 1rem;
+  margin-bottom: 2rem; 
 }
 
 /* --- The Grid Layout --- */
 .home-grid {
   display: grid;
-  /* Auto-fit creates responsive columns */
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  
-  /* gap: controls space between ALL cards (both rows and columns) */
-  gap: 3rem; 
-  
-  /* row-gap: Specifically forces space between the rows */
-  row-gap: 3rem; 
-
+  /* Desktop: Use auto-fit (usually 3 or 4 columns) */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
   justify-content: center;
-  padding-bottom: 2rem;
+  width: 100%;
 }
 
 /* --- Individual Cards --- */
@@ -40,44 +40,78 @@
   background: white;
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 2.5rem 2rem; /* More padding inside the card */
+  padding: 2rem; 
   text-decoration: none; 
   color: var(--text-color);
   box-shadow: var(--shadow);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   
-  /* Flex centering for content */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  min-height: 220px; /* Ensure cards are uniform height */
 }
 
-/* Hover Effect */
 .home-card:hover {
-  transform: translateY(-8px); /* Lifts up slightly more */
-  box-shadow: 0 15px 30px rgba(0,0,0,0.12);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
   border-color: var(--primary-color);
 }
 
 /* --- Card Content --- */
 .home-card .icon {
-  font-size: 4rem; /* Bigger icons */
-  margin-bottom: 1.5rem;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
 }
 
 .home-card h3 {
   margin: 0.5rem 0;
   color: var(--primary-color);
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 
 .home-card p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* 📱 MOBILE OVERRIDE: FORCE 2 COLUMNS 📱 */
+@media (max-width: 600px) {
+  .home-container {
+    padding: 0.5rem; /* Less padding on edges */
+    justify-content: flex-start; /* Start from top on mobile */
+    padding-top: 1rem;
+  }
+
+  .home-header h1 { font-size: 1.5rem; }
+  .home-header p { font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+  .home-grid {
+    /* FORCE 2 Columns on mobile, regardless of width */
+    grid-template-columns: 1fr 1fr; 
+    gap: 10px; /* Tighter gap */
+  }
+
+  .home-card {
+    padding: 1rem; /* Smaller padding inside card */
+    min-height: 140px; /* Shorter cards */
+  }
+
+  .home-card .icon {
+    font-size: 2rem; /* Smaller emoji */
+    margin-bottom: 0.5rem;
+  }
+
+  .home-card h3 {
+    font-size: 0.95rem; /* Smaller title */
+  }
+
+  .home-card p {
+    font-size: 0.75rem; /* Tiny description */
+    line-height: 1.2;
+  }
 }
