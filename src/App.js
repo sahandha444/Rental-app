@@ -56,7 +56,7 @@ function App() {
           <nav className="navbar">
             <div className="navbar-content">
               <NavLink to="/" className="nav-logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>  
-                <img src={YaluToursLogo} alt="Yalu Rents Logo" style={{ height: '58px', maxWidth: '180px' }} />
+                <img src={YaluToursLogo} alt="Yalu Rents Logo" style={{ height: '68px', maxWidth: '180px',padding: '10px' }} />
                 <span style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--primary-color)', paddingLeft: '15px', '@media (max-width: 600px)': { display: 'none' } }}>
                   Owner's Portal
                 </span>
