@@ -1,6 +1,7 @@
 // File: src/utils/InvoiceGenerator.js
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import YaluToursLogo from '../assets/yalu-tours-logo.png'; // <--- 1. Import Logo
 
 export const generateInvoicePDF = async (rental, car, returnData) => {
   // returnData contains: { returnDate, endMileage, extraKm, lateHours, damageCost, finalTotal, signatureUrl }
@@ -8,7 +9,7 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
   // 1. Define Styles
   const styles = {
     container: "font-family: Arial, sans-serif; padding: 40px; background: #fff; width: 794px; color: #333;",
-    header: "display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px;",
+    header: "display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px;",
     companyInfo: "text-align: right;",
     invoiceTitle: "font-size: 32px; font-weight: bold; color: #2c3e50;",
     table: "width: 100%; border-collapse: collapse; margin-top: 20px;",
@@ -30,6 +31,7 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
           <div>Date: ${new Date().toLocaleDateString()}</div>
         </div>
         <div style="${styles.companyInfo}">
+          <img src="${YaluToursLogo}" style="height: 60px; margin-bottom: 10px;" alt="Yalu Tours" /><br>
           <strong>Yalu Tours</strong><br>
           Matara, Sri Lanka<br>
           Tel: +94 77 266 7000
@@ -47,7 +49,8 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
         <strong>Vehicle Details:</strong><br>
         ${car.name} (${car.plate_number})<br>
         Rented: ${new Date(rental.rental_start_date).toLocaleString()}<br>
-        Returned: ${new Date(returnData.returnDate).toLocaleString()} </div>
+        Returned: ${new Date(returnData.returnDate).toLocaleString()}
+      </div>
 
       <table style="${styles.table}">
         <thead>
@@ -77,9 +80,9 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
           ${returnData.lateHours > 0 ? `
           <tr>
             <td style="${styles.td}">Late Fee</td>
-            <td style="${styles.td}">${car.extra_hourly_fee} / hr</td>
+            <td style="${styles.td}">${car.late_fee_per_hour || car.extra_hourly_rate} / hr</td>
             <td style="${styles.td}">${returnData.lateHours} hrs</td>
-            <td style="${styles.td}">${(returnData.lateHours * car.extra_hourly_fee).toFixed(2)}</td>
+            <td style="${styles.td}">${(returnData.lateHours * (car.late_fee_per_hour || car.extra_hourly_rate)).toFixed(2)}</td>
           </tr>` : ''}
 
           ${returnData.damageCost > 0 ? `
@@ -109,7 +112,7 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
 
       <div style="${styles.signatureSection}">
         <p><strong>Customer Signature (Return):</strong></p>
-        ${returnData.signatureUrl ? `<img src="${returnData.signatureUrl}" width="200" style="border-bottom: 1px solid #ccc;"/>` : ''}
+        ${returnData.signatureUrl ? `<img src="${returnData.signatureUrl}" width="150" style="border-bottom: 1px solid #ccc;"/>` : ''}
         <p>${rental.customer_name}</p>
       </div>
 
@@ -129,7 +132,8 @@ export const generateInvoicePDF = async (rental, car, returnData) => {
   container.style.top = '0';
   document.body.appendChild(container);
 
-  await new Promise(r => setTimeout(r, 100));
+  // Allow images to load
+  await new Promise(r => setTimeout(r, 200));
 
   const canvas = await html2canvas(container.firstElementChild, {
     scale: 2,
