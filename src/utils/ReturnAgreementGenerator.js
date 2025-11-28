@@ -29,10 +29,10 @@ export const generateReturnAgreementPDF = async (rental, car, returnData) => {
         <span style="${styles.boldUnderline}">${car.plate_number}</span> දරණ 
         <span style="${styles.boldUnderline}">${car.name}</span> වර්ගයේ වාහනය 
         ඉහත සඳහන් ගිවිසුම හා කොන්දේසි වලට යටත්ව 
-        20<span style="${styles.boldUnderline}">${String(year).slice(-2)}</span> 
-        මස <span style="${styles.boldUnderline}">${month}</span> 
-        දින <span style="${styles.boldUnderline}">${day}</span> 
-        පෙ.ව. / ප.ව. <span style="${styles.boldUnderline}">${time}</span> 
+        20<span style="${styles.boldUnderline}">${String(year).slice(-2)}</span> ක්වූ 
+        <span style="${styles.boldUnderline}">${month}</span> මස 
+        <span style="${styles.boldUnderline}">${day}</span> දින 
+        <span style="${styles.boldUnderline}">${time}</span> ට
         වාහනය භාරදුන් බවට මෙයින් සහතික කරමි.
       </div>
 
@@ -46,9 +46,10 @@ export const generateReturnAgreementPDF = async (rental, car, returnData) => {
       <hr style="border: 0; border-top: 1px solid #ccc; margin: 40px 0;" />
 
       <div style="${styles.paragraph}">
-        නැවත රුපියල් ........................ක්වූ 
-        ........................ මස ........................
-        දින පෙ.ව. / ප.ව. ........................
+        නැවත රථය 20<span style="${styles.boldUnderline}">${String(year).slice(-2)}</span> ක්වූ 
+        <span style="${styles.boldUnderline}">${month}</span> මස 
+        <span style="${styles.boldUnderline}">${day}</span> දින 
+        <span style="${styles.boldUnderline}">${time}</span> ට
         භාරගත් බවට මෙයින් සහතික කරමි.
       </div>
 

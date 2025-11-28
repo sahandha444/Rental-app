@@ -194,10 +194,32 @@ const ManageRentalsPage = () => {
                   <td>{rental.return_date ? new Date(rental.return_date).toLocaleDateString() : '-'}</td>
                   <td>LKR {rental.final_total_cost ? rental.final_total_cost.toFixed(2) : '-'}</td>
                   <td className="actions-cell">
-                    <a href={rental.agreement_pdf_url} target="_blank" rel="noopener noreferrer" className="view-pdf-button">Agreement</a>
-                    <a href={rental.return_invoice_pdf_url} target="_blank" rel="noopener noreferrer" className="view-pdf-button">Invoice</a>
-                    <button className="view-photos-button" onClick={() => openPhotoModal(rental)}>Photos</button>
-                  </td>
+                  {/* View Original Agreement */}
+                  <a href={rental.agreement_pdf_url} target="_blank" rel="noopener noreferrer" className="view-pdf-button">
+                    Agreement
+                  </a>
+                  
+                  {/* View Invoice */}
+                  <a href={rental.return_invoice_pdf_url} target="_blank" rel="noopener noreferrer" className="view-pdf-button">
+                    Invoice
+                  </a>
+
+                  {/* ✅ NEW BUTTON: Return Doc */}
+                  {rental.return_agreement_pdf_url && (
+                    <a 
+                      href={rental.return_agreement_pdf_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="view-pdf-button"
+                    >
+                      Return Doc
+                    </a>
+                  )}
+
+                  <button className="view-photos-button" onClick={() => openPhotoModal(rental)}>
+                    Photos
+                  </button>
+                </td>
                 </tr>
               ))
             )}

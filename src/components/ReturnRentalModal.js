@@ -126,19 +126,24 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
       await supabase.storage.from('invoices').upload(invFileName, invoiceFile);
       const { data: invUrlData } = supabase.storage.from('invoices').getPublicUrl(invFileName);
 
-      // C. Generate & Upload Return Agreement (NEW)
+      // C. Generate & Upload Return Agreement
       setStatusMsg('Generating Return Doc... 📄');
       const returnDocFile = await generateReturnAgreementPDF(rental, car, returnData);
       const returnDocName = `return-doc-${rental.id}-${uuidv4()}.pdf`;
       
-      // Note: Storing in 'agreements' bucket, or create a 'return-docs' bucket if preferred
+      // 1. Upload the file
       await supabase.storage.from('agreements').upload(returnDocName, returnDocFile);
-      // We don't strictly need to save this URL to a column if we don't have one, 
-      // but it's good practice to log it or save to a 'return_agreement_url' column if you add one later.
+      
+      // 2. ✅ FIXED: Get the Public URL (This line was missing!)
+      const { data: returnDocData } = supabase.storage
+        .from('agreements')
+        .getPublicUrl(returnDocName);
 
-      // D. Update Database
+      /// D. Update Database
       setStatusMsg('Updating Database... 💾');
-      const { error: updateError } = await supabase
+      
+      // Using unique variable name for error checking
+      const { error: rentalUpdateError } = await supabase
         .from('rentals')
         .update({
           status: 'completed',
@@ -147,12 +152,16 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
           final_total_cost: calculations.totalDue,
           extra_mileage_cost: calculations.extraKmCost,
           return_invoice_pdf_url: invUrlData.publicUrl,
+          
+          // Now 'returnDocData' is defined, so this works:
+          return_agreement_pdf_url: returnDocData.publicUrl, 
+
           return_signature_url: signaturePublicUrl, 
           remarks_return: remarks
         })
         .eq('id', rental.id);
 
-      if (updateError) throw updateError;
+      if (rentalUpdateError) throw rentalUpdateError;
 
       // E. Update Car Status
       await supabase.from('vehicles').update({ status: 'Available', current_mileage: endMileage }).eq('id', car.id);
