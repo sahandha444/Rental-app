@@ -73,6 +73,7 @@ function App() {
                 <NavLink to="/vehicle-dashboard" className="nav-link">Vehicle Board</NavLink>
                 <NavLink to="/manage-rentals" className="nav-link">Manage Rentals</NavLink>
                 <NavLink to="/manage-vehicles" className="nav-link">Manage Fleet</NavLink>
+                <NavLink to="/settings" className="nav-link">Settings</NavLink>
               </div>
             </div>
           </nav>
