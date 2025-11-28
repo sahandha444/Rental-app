@@ -53,16 +53,23 @@ function App() {
       {/* --- CONDITIONAL LAYOUT: Only show Navbar if Logged In --- */}
       {session && (
         <>
+          {/* --- NAVBAR --- */}
           <nav className="navbar">
             <div className="navbar-content">
-              <NavLink to="/" className="nav-logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>  
-                <img src={YaluToursLogo} alt="Yalu Rents Logo" style={{ height: '68px', maxWidth: '180px',padding: '10px' }} />
-                <span style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--primary-color)', paddingLeft: '15px', '@media (max-width: 600px)': { display: 'none' } }}>
+              {/* Updated Logo Section with Classes */}
+              <NavLink to="/" className="nav-logo" onClick={closeMenu}>  
+                <img 
+                  src={YaluToursLogo} 
+                  alt="Yalu Rents" 
+                  className="logo-image" 
+                />
+                <span className="brand-title">
                   Owner's Portal
                 </span>
               </NavLink>
 
               <button className="hamburger-btn" onClick={toggleMenu} aria-label="Toggle menu">
+                {/* ... keep hamburger spans ... */}
                 <span className={`bar ${isMenuOpen ? 'open' : ''}`}></span>
                 <span className={`bar ${isMenuOpen ? 'open' : ''}`}></span>
                 <span className={`bar ${isMenuOpen ? 'open' : ''}`}></span>

@@ -65,11 +65,38 @@ body {
 }
 
 .nav-logo {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Space between logo and text */
   text-decoration: none;
   z-index: 1001;
+  transition: opacity 0.2s ease;
+}
+
+.nav-logo:hover {
+  opacity: 0.9;
+}
+
+.logo-image {
+  height: 55px; /* Fixed height for consistency */
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+}
+
+.brand-title {
+  font-size: 1.5rem;
+  font-weight: 650;
+  color: #495057; /* Professional Dark Gray */
+  
+  /* The Vertical Divider Line */
+  border-left: 2px solid #e9ecef; 
+  padding-left: 15px;
+  
+  line-height: 1.2;
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  letter-spacing: 0.5px;
+  white-space: nowrap; /* Prevents wrapping */
 }
 
 /* Desktop Links */
@@ -324,5 +351,16 @@ left: 0;
      This display property is the key switch between desktop/mobile views. */
   .mobile-menu {
     display: flex; 
+  }
+
+}
+
+@media (max-width: 600px) {
+  .brand-title {
+    display: none;
+  }
+  
+  .logo-image {
+    height: 45px; /* Slightly smaller logo on mobile */
   }
 }
