@@ -1,10 +1,102 @@
 // File: src/components/RentalSteps.js
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 
-// --- FIX: Using extensions bypasses the Android 13+ Photo Picker ---
-// This forces the "System File Chooser" which includes the Camera button.
-const FILE_ACCEPT = ".jpg, .jpeg, .png, .webp, .heic";
+// --- 🛠️ HELPER COMPONENT: DUAL UPLOAD BUTTONS ---
+const ImageUploadControl = ({ id, label, existingUrl, onChange, multiple = false }) => {
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const [fileName, setFileName] = useState('');
+
+  // Handle file selection from either input
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      if (multiple) {
+        setFileName(`${e.target.files.length} photos selected`);
+      } else {
+        setFileName(e.target.files[0].name);
+      }
+      
+      // Create a synthetic event to pass back to the parent's handleFileChange
+      // We must ensure the 'id' matches what the parent expects (e.g., 'licensePhotoFront')
+      const syntheticEvent = {
+        target: {
+          id: id,
+          files: e.target.files
+        }
+      };
+      onChange(syntheticEvent);
+    }
+  };
+
+  const btnStyle = {
+    flex: 1,
+    padding: '10px',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+    background: '#f8f9fa',
+    cursor: 'pointer',
+    fontWeight: '600',
+    fontSize: '0.9rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '5px'
+  };
+
+  return (
+    <div style={{ marginBottom: '20px' }}>
+      <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#495057' }}>
+        {label}
+      </label>
+      
+      {/* Status Message */}
+      {existingUrl && !fileName && (
+        <div style={{ fontSize: '12px', color: 'green', marginBottom: '8px' }}>
+          ✅ Previous photo loaded. Choose new to replace.
+        </div>
+      )}
+      {fileName && (
+        <div style={{ fontSize: '12px', color: '#007bff', marginBottom: '8px', fontWeight: 'bold' }}>
+          📎 Selected: {fileName}
+        </div>
+      )}
+
+      {/* Visible Buttons */}
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button type="button" style={btnStyle} onClick={() => cameraInputRef.current.click()}>
+          📷 Camera
+        </button>
+        <button type="button" style={btnStyle} onClick={() => galleryInputRef.current.click()}>
+          🖼️ Gallery
+        </button>
+      </div>
+
+      {/* Hidden Inputs */}
+      {/* Input 1: Forces Camera */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+        multiple={multiple}
+      />
+
+      {/* Input 2: Standard File Picker (Gallery) - No capture attribute */}
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+        multiple={multiple}
+      />
+    </div>
+  );
+};
+
 
 // --- STEP 1: CUSTOMER DETAILS ---
 export const RentalStep1 = ({ formData, setFormData, car, pastCustomers, handleTextChange, handleFileChange, nextStep }) => {
@@ -79,21 +171,34 @@ export const RentalStep1 = ({ formData, setFormData, car, pastCustomers, handleT
 
       <hr className="form-divider" />
       
-      <label>Driver's License (Front)</label>
-      {formData.existingLicenseFront && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded. Upload new file to replace.</div>}
-      <input type="file" id="licensePhotoFront" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} />
+      {/* --- DUAL BUTTON UPLOADS --- */}
+      <ImageUploadControl 
+        id="licensePhotoFront" 
+        label="Driver's License (Front)" 
+        existingUrl={formData.existingLicenseFront} 
+        onChange={handleFileChange} 
+      />
       
-      <label>Driver's License (Back)</label>
-      {formData.existingLicenseBack && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded. Upload new file to replace.</div>}
-      <input type="file" id="licensePhotoBack" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} />
+      <ImageUploadControl 
+        id="licensePhotoBack" 
+        label="Driver's License (Back)" 
+        existingUrl={formData.existingLicenseBack} 
+        onChange={handleFileChange} 
+      />
 
-      <label>ID Card (Front) (Optional)</label>
-      {formData.existingIdFront && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded.</div>}
-      <input type="file" id="idCardPhotoFront" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} />
+      <ImageUploadControl 
+        id="idCardPhotoFront" 
+        label="ID Card (Front) (Optional)" 
+        existingUrl={formData.existingIdFront} 
+        onChange={handleFileChange} 
+      />
       
-      <label>ID Card (Back) (Optional)</label>
-      {formData.existingIdBack && <div style={{fontSize: '12px', color: 'green', marginBottom: '5px'}}>✅ Previous photo loaded.</div>}
-      <input type="file" id="idCardPhotoBack" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} />
+      <ImageUploadControl 
+        id="idCardPhotoBack" 
+        label="ID Card (Back) (Optional)" 
+        existingUrl={formData.existingIdBack} 
+        onChange={handleFileChange} 
+      />
 
       <label htmlFor="remarksStep1">Remarks (Step 1)</label>
       <textarea id="remarksStep1" className="form-input" value={formData.remarksStep1} onChange={handleTextChange} />
@@ -119,11 +224,19 @@ export const RentalStep2 = ({ formData, handleTextChange, handleFileChange, prev
       <label htmlFor="advancePayment">Advance Payment (LKR)</label>
       <input type="number" id="advancePayment" className="form-input" value={formData.advancePayment} onChange={handleTextChange} />
 
-      <label htmlFor="mileagePhoto">Car Dashboard Photo (Mileage) (Required)</label>
-      <input type="file" id="mileagePhoto" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} required />
+      {/* --- DUAL BUTTON UPLOADS --- */}
+      <ImageUploadControl 
+        id="mileagePhoto" 
+        label="Car Dashboard Photo (Mileage) (Required)" 
+        onChange={handleFileChange} 
+      />
       
-      <label htmlFor="extraCarPhotos">Extra Car Photos (Optional, max 5)</label>
-      <input type="file" id="extraCarPhotos" className="form-input" accept={FILE_ACCEPT} onChange={handleFileChange} multiple />
+      <ImageUploadControl 
+        id="extraCarPhotos" 
+        label="Extra Car Photos (Optional, max 5)" 
+        onChange={handleFileChange} 
+        multiple={true} 
+      />
       
       <label htmlFor="remarksStep2">Remarks (Step 2)</label>
       <textarea id="remarksStep2" className="form-input" value={formData.remarksStep2} onChange={handleTextChange} />
