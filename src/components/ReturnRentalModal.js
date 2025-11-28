@@ -3,17 +3,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { generateInvoicePDF } from '../utils/InvoiceGenerator'; 
-import { dataURLtoFile } from '../utils/pdfHelper'; // Import the helper from your utils
+import { dataURLtoFile } from '../utils/pdfHelper'; 
 import { v4 as uuidv4 } from 'uuid';
 import SignatureCanvas from 'react-signature-canvas'; 
 import './ReturnRentalModal.css'; 
 
 const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
+  
+  // 🆕 NEW: Status Message State
+  const [statusMsg, setStatusMsg] = useState('');
+
   const sigPad = useRef(null);
   
-  // Initialize with Current Date AND Time (local ISO format)
-  // Format: YYYY-MM-DDTHH:MM
+  // Initialize with Current Date AND Time
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   const defaultDateTime = now.toISOString().slice(0, 16);
@@ -48,23 +51,20 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     }
     const extraKmCost = extraKm * (car.extra_km_price || 0);
 
-    // B. Time/Late Fee Calc (Specific Hourly Calculation)
+    // B. Time/Late Fee Calc
     const startDate = new Date(rental.rental_start_date);
-    // Expected return time is Start Date + Rental Days (at the same time it started)
     const expectedReturnDate = new Date(startDate);
     expectedReturnDate.setDate(startDate.getDate() + rental.rental_days);
     
     const actualReturnDate = new Date(returnDateTime);
 
     let lateHours = 0;
-    // Calculate difference in milliseconds
     const diffMs = actualReturnDate - expectedReturnDate;
     
     if (diffMs > 0) {
-      // Convert ms to hours (Math.ceil to charge for part of an hour)
-      lateHours = Math.floor(diffMs / (1000 * 60 * 60));
+      lateHours = Math.ceil(diffMs / (1000 * 60 * 60));
     }
-    const lateFeeCost = lateHours * (car.extra_hourly_rate || 0);
+    const lateFeeCost = lateHours * (car.late_fee_per_hour || car.extra_hourly_rate || 0);
 
     // C. Final Total
     const baseCost = rental.rental_days * (car.daily_rate || 0);
@@ -88,8 +88,11 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     if (sigPad.current.isEmpty()) return alert("Customer signature is required to return.");
     
     setLoading(true);
+    setStatusMsg('Starting Return... 🚀'); // Start status
+
     try {
-      // A. Upload Signature First
+      // A. Upload Signature
+      setStatusMsg('Saving Signature... ✍️');
       const sigDataUrl = sigPad.current.toDataURL('image/png');
       const sigFile = dataURLtoFile(sigDataUrl, `return-sig-${rental.id}.png`);
       const sigFileName = `${uuidv4()}-return-sig.png`;
@@ -106,7 +109,8 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
       
       const signaturePublicUrl = sigUrlData.publicUrl;
 
-      // B. Generate Invoice PDF (Pass signature URL)
+      // B. Generate Invoice PDF
+      setStatusMsg('Generating Invoice... 🧾');
       const returnData = {
         returnDate: returnDateTime,
         endMileage,
@@ -114,13 +118,13 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
         lateHours: calculations.lateHours,
         damageCost: parseFloat(damageCost),
         finalTotal: calculations.totalDue,
-        signatureUrl: sigDataUrl // Pass Base64 for PDF generation (faster)
+        signatureUrl: sigDataUrl 
       };
 
-      console.log("Generating Invoice...");
       const invoiceFile = await generateInvoicePDF(rental, car, returnData);
       
       // C. Upload Invoice
+      setStatusMsg('Uploading Invoice... ☁️');
       const invFileName = `invoice-${rental.id}-${uuidv4()}.pdf`;
       const { error: uploadError } = await supabase.storage
         .from('invoices')
@@ -132,7 +136,8 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
         .from('invoices')
         .getPublicUrl(invFileName);
 
-      // D. Update Rental Record (Close it)
+      // D. Update Database
+      setStatusMsg('Updating Database... 💾');
       const { error: updateError } = await supabase
         .from('rentals')
         .update({
@@ -142,7 +147,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
           final_total_cost: calculations.totalDue,
           extra_mileage_cost: calculations.extraKmCost,
           return_invoice_pdf_url: publicUrlData.publicUrl,
-          return_signature_url: signaturePublicUrl, // Save signature URL to DB
+          return_signature_url: signaturePublicUrl, 
           remarks_return: remarks
         })
         .eq('id', rental.id);
@@ -160,27 +165,28 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
 
       if (carError) throw carError;
 
-      // --- 🆕 F. SEND INVOICE SMS ---
+      // F. Send SMS
+      setStatusMsg('Sending SMS... 📲');
       try {
-        console.log("Sending Invoice SMS...");
         await supabase.functions.invoke('send-local-sms', {
           body: { 
-            customerPhone: rental.customer_phone, // Get phone from rental object
+            customerPhone: rental.customer_phone, 
             customerName: rental.customer_name,
-            link: publicUrlData.publicUrl, // Use the public Invoice URL
-            type: 'return' // <--- Tells the backend to send the "Return/Invoice" message
+            link: publicUrlData.publicUrl, 
+            type: 'return' 
           }
         });
       } catch (smsError) {
         console.warn("Invoice SMS Failed:", smsError);
-        // Don't block the UI success if SMS fails
       }
 
+      setStatusMsg('Done! ✅');
       onSuccess();
 
     } catch (error) {
       console.error("Error returning vehicle:", error);
       alert("Error: " + error.message);
+      setStatusMsg(''); // Clear status on error
     } finally {
       setLoading(false);
     }
@@ -256,7 +262,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
         </div>
 
         <div className="modal-actions" style={{marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
-          <button onClick={onClose} className="cancel-btn">Cancel</button>
+          <button onClick={onClose} className="cancel-btn" disabled={loading}>Cancel</button>
           <button 
             onClick={handleConfirmReturn} 
             className="confirm-btn" 
@@ -266,6 +272,18 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
             {loading ? 'Processing...' : 'Confirm Return & Close'}
           </button>
         </div>
+
+        {/* 🆕 STATUS INDICATOR OVERLAY */}
+        {loading && (
+          <div style={{
+            position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+            background: '#333', color: '#fff', padding: '12px 24px', borderRadius: '30px',
+            fontWeight: 'bold', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 10,
+            whiteSpace: 'nowrap'
+          }}>
+            {statusMsg || 'Processing...'}
+          </div>
+        )}
 
       </div>
     </div>
