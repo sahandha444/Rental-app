@@ -47,7 +47,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     const actualReturnDate = new Date(returnDateTime);
     let lateHours = 0;
     const diffMs = actualReturnDate - expectedReturnDate;
-    if (diffMs > 0) lateHours = Math.ceil(diffMs / (1000 * 60 * 60));
+    if (diffMs > 0) lateHours = Math.floor(diffMs / (1000 * 60 * 60));
     const lateFeeCost = lateHours * (car.late_fee_per_hour || car.extra_hourly_rate || 0);
 
     const baseCost = rental.rental_days * (car.daily_rate || 0);
