@@ -40,6 +40,23 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const handleWheel = (e) => {
+      // If the user is scrolling on a number input, force it to lose focus
+      if (document.activeElement.type === "number") {
+        document.activeElement.blur();
+      }
+    };
+
+    // Attach the listener to the window
+    window.addEventListener("wheel", handleWheel);
+
+    // Cleanup when app closes
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
+
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
 

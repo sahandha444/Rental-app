@@ -1,13 +1,107 @@
-import React, { useState, useEffect } from 'react';
+// File: src/pages/ManageVehiclesPage.js
+
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
+import imageCompression from 'browser-image-compression'; 
 import './ManageVehiclesPage.css';
+
+// --- 🛠️ HELPER: DUAL UPLOAD BUTTONS ---
+const ImageUploadControl = ({ id, label, onChange }) => {
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const [fileName, setFileName] = useState('');
+
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFileName(e.target.files[0].name);
+      // Pass event back to parent
+      const syntheticEvent = {
+        target: { id: id, files: e.target.files }
+      };
+      onChange(syntheticEvent);
+    }
+  };
+
+  const btnStyle = {
+    flex: 1,
+    padding: '10px',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+    background: '#f8f9fa',
+    cursor: 'pointer',
+    fontWeight: '600',
+    fontSize: '0.9rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '5px'
+  };
+
+  return (
+    <div style={{ marginBottom: '20px' }}>
+      <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#495057' }}>
+        {label}
+      </label>
+      
+      {fileName && (
+        <div style={{ fontSize: '12px', color: '#007bff', marginBottom: '8px', fontWeight: 'bold' }}>
+          📎 Selected: {fileName}
+        </div>
+      )}
+
+      {/* Buttons */}
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button type="button" style={btnStyle} onClick={() => cameraInputRef.current.click()}>
+          📷 Camera
+        </button>
+        <button type="button" style={btnStyle} onClick={() => galleryInputRef.current.click()}>
+          🖼️ Gallery
+        </button>
+      </div>
+
+      {/* Hidden Inputs */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment" // Force Camera
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/jpeg, image/png, image/jpg" // Force Gallery/File Picker
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
+    </div>
+  );
+};
+
+// --- COMPRESSION HELPER ---
+const compressImage = async (file) => {
+  if (!file) return null;
+  const options = {
+    maxSizeMB: 0.6,
+    maxWidthOrHeight: 1280,
+    useWebWorker: true,
+    initialQuality: 0.7,
+  };
+  try {
+    return await imageCompression(file, options);
+  } catch (error) {
+    console.warn("Compression skipped:", error);
+    return file; 
+  }
+};
 
 const ManageVehiclesPage = () => {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // State for the new vehicle form
+  // Form State
   const [name, setName] = useState('');
   const [plate, setPlate] = useState('');
   const [mileage, setMileage] = useState('');
@@ -16,8 +110,11 @@ const ManageVehiclesPage = () => {
   const [extraHourRate, setExtraHourRate] = useState('');
   const [photo, setPhoto] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Key to force-reset the upload component after submit
+  const [formKey, setFormKey] = useState(0);
 
-  // Fetch all vehicles when the page loads
+  // Fetch all vehicles
   useEffect(() => {
     fetchVehicles();
   }, []);
@@ -25,12 +122,9 @@ const ManageVehiclesPage = () => {
   const fetchVehicles = async () => {
     setLoading(true);
     try {
-      // Get ALL vehicles, even inactive ones
       const { data, error } = await supabase
         .from('vehicles')
         .select('*')
-        // --- THIS IS THE FIX ---
-        // I changed 'created_at' to 'name', which is a column we know exists.
         .order('name', { ascending: true }); 
         
       if (error) throw error;
@@ -42,14 +136,12 @@ const ManageVehiclesPage = () => {
     }
   };
 
-  // Handle file input
   const handleFileChange = (e) => {
     if (e.target.files[0]) {
       setPhoto(e.target.files[0]);
     }
   };
 
-  // --- Create a function to reset all state ---
   const resetForm = () => {
     setName('');
     setPlate('');
@@ -58,12 +150,9 @@ const ManageVehiclesPage = () => {
     setExtraMileRate('');
     setExtraHourRate('');
     setPhoto(null);
-    // This resets the file input DOM element
-    const form = document.getElementById('add-vehicle-form');
-    if (form) form.reset();
+    setFormKey(prev => prev + 1); // This resets the ImageUploadControl text
   };
 
-  // Handle the "Add Vehicle" form submit
   const handleAddVehicle = async (e) => {
     e.preventDefault();
     if (!photo) {
@@ -73,24 +162,26 @@ const ManageVehiclesPage = () => {
     setSubmitting(true);
     
     try {
-      // 1. Upload the photo
+      // 1. Compress Image
+      const compressedPhoto = await compressImage(photo);
+
+      // 2. Upload the photo
       const fileName = `${uuidv4()}-${photo.name}`;
       const filePath = `vehicle-photos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('photos')
-        .upload(filePath, photo);
+        .upload(filePath, compressedPhoto);
 
       if (uploadError) throw uploadError;
 
-      // 2. Get the public URL
       const { data: urlData } = supabase.storage
         .from('photos')
         .getPublicUrl(filePath);
       
       const imageUrl = urlData.publicUrl;
 
-      // 3. Insert the new vehicle into the database
+      // 3. Insert into DB
       const { error: insertError } = await supabase
         .from('vehicles')
         .insert([
@@ -110,19 +201,17 @@ const ManageVehiclesPage = () => {
       if (insertError) throw insertError;
       
       alert('Vehicle added successfully!');
-      
       resetForm();
-      fetchVehicles(); // Refresh the list
+      fetchVehicles(); 
 
     } catch (error) {
       console.error("Error adding vehicle:", error.message);
-      alert("Failed to add vehicle. The plate number of the vehicle already exists");
+      alert("Failed to add vehicle. The plate number might already exist.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Handle "deleting" (deactivating) a vehicle
   const handleToggleActive = async (id, currentStatus) => {
     const newStatus = !currentStatus;
     const action = newStatus ? 'activate' : 'deactivate';
@@ -135,10 +224,7 @@ const ManageVehiclesPage = () => {
           .eq('id', id);
           
         if (error) throw error;
-        
-        alert(`Vehicle ${action}d successfully!`);
-        fetchVehicles(); // Refresh the list
-        
+        fetchVehicles(); 
       } catch (error) {
         console.error(`Error ${action}ing vehicle:`, error.message);
       }
@@ -172,8 +258,13 @@ const ManageVehiclesPage = () => {
           <label htmlFor="extraHourRate">Extra Hourly Rate (LKR per hour)</label>
           <input type="number" step="0.01" id="extraHourRate" className="form-input" value={extraHourRate} onChange={(e) => setExtraHourRate(e.target.value)} required />
 
-          <label htmlFor="photo">Vehicle Photo (for dashboard)</label>
-          <input type="file" id="photo" className="form-input" accept="image/*" onChange={handleFileChange} required />
+          {/* 🆕 UPDATED: Dual Camera/Gallery Buttons */}
+          <ImageUploadControl 
+            key={formKey} // Force reset on submit
+            id="photo" 
+            label="Vehicle Photo (for dashboard)" 
+            onChange={handleFileChange} 
+          />
 
           <button type="submit" className="submit-button" disabled={submitting}>
             {submitting ? 'Adding...' : 'Add Vehicle'}
@@ -184,10 +275,10 @@ const ManageVehiclesPage = () => {
       <hr className="divider" />
 
       {/* --- VEHICLE LIST --- */}
-      <div className="vehicle-list-container">
+      <div className="vehicles-list-container">
         <h2>Existing Vehicles</h2>
         {loading && <p>Loading vehicles...</p>}
-        <table className="vehicle-table">
+        <table className="vehicles-table">
           <thead>
             <tr>
               <th>Name</th>

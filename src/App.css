@@ -350,19 +350,29 @@ left: 0;
 }
 
 /* --- 2. Identification Footer --- */
+/* --- 2. Identification Footer (Fixed to Bottom) --- */
 .app-footer {
+  position: fixed; /* 📌 Stays at the bottom of the screen */
+  bottom: 0;
+  left: 0;
+  width: 100%;
   text-align: center;
-  padding: 1.5rem;
-  margin-top: 2rem;
+  padding: 10px; /* Reduced padding to save space */
   border-top: 1px solid var(--border-color);
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem; /* Slightly smaller font */
   background-color: var(--bg-color); /* Matches page bg */
+  z-index: 100; /* Ensures it sits above other content */
 }
 
 .app-footer strong,a {
-  text-decoration: none;
   color: var(--primary-color);
+  text-decoration: none;
+}
+
+/* Add padding to the container so content doesn't get hidden behind the footer */
+.app-container {
+  padding-bottom: 60px; /* Space for the fixed footer */
 }
 
 /* Ensure footer doesn't overlap on mobile */

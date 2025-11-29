@@ -1,36 +1,12 @@
+/* File: src/pages/ManageVehiclesPage.css */
+
 .manage-vehicles-container {
   max-width: 900px;
   margin: 0 auto;
 }
 
-/* (You can import and use .form-container, .rental-form, .form-input, etc. 
-   from NewRentalPage.css if you set up your CSS imports correctly) */
-
-.vehicle-list-container {
-  margin-top: 2rem;
-}
-
-.vehicle-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-
-.vehicle-table th,
-.vehicle-table td {
-  border: 1px solid #ddd;
-  padding: 0.75rem;
-  text-align: left;
-}
-
-.vehicle-table th {
-  background-color: #f4f4f4;
-}
-
-.vehicle-table tr.inactive {
-  background-color: #f9f9f9;
-  color: #999;
-}
+/* Reusing generic form styles if available in global CSS, 
+   otherwise specific overrides can go here */
 
 .toggle-button {
   padding: 0.5rem 1rem;
@@ -38,6 +14,8 @@
   border-radius: 4px;
   color: white;
   cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
 .toggle-button.deactivate {
@@ -46,4 +24,73 @@
 
 .toggle-button.activate {
   background-color: #28a745; /* Green */
+}
+
+.inactive {
+  background-color: #f9f9f9;
+  color: #999;
+}
+
+/* --- RESPONSIVE TABLE STYLES --- */
+
+/* 1. Scrollable Container */
+.vehicles-list-container {
+  margin-top: 2rem;
+  width: 100%;
+  overflow-x: auto; /* <--- Enables horizontal scrolling on mobile */
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.vehicles-list-container h2 {
+  padding: 1rem;
+  margin: 0;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 1.25rem;
+}
+
+/* 2. The Table */
+.vehicles-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px; /* Forces table to be wide enough to read */
+}
+
+.vehicles-table th,
+.vehicles-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #dee2e6;
+  white-space: nowrap; /* Prevents text wrapping */
+}
+
+.vehicles-table th {
+  background-color: #fff;
+  color: #495057;
+  font-weight: 600;
+}
+
+/* 3. Sticky Action Column (Keeps buttons visible) */
+.vehicles-table td:last-child,
+.vehicles-table th:last-child {
+  position: sticky;
+  right: 0;
+  background-color: #fff;
+  border-left: 1px solid #dee2e6;
+  z-index: 2;
+  text-align: center;
+}
+
+/* Ensure header background matches */
+.vehicles-table th:last-child {
+  background-color: #fff; 
+}
+
+/* Handle row background for sticky column in inactive rows */
+.vehicles-table tr.inactive td:last-child {
+  background-color: #f9f9f9;
 }
