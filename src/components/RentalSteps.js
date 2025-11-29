@@ -371,95 +371,64 @@ export const RentalStep3 = ({ formData, setFormData, car, owner, totalCost, agre
           </div>
         </div>
 
-        {/* --- GUARANTORS SECTION (FIXED ALIGNMENT) --- */}
-        <div style={{marginTop: '30px'}}>
-          <strong>ඇපකරුවන් :</strong>
-          
-          {/* Guarantor 1 */}
-          <div style={{marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end'}}>
-            {/* Added marginBottom to lift the name up to align with the signature line */}
-            <div style={{width: '65%', marginBottom: '20px'}}>
-              1. නම: <span>{formData.guarantor1Name || '...........................................'}</span>
+        {/* ... (Guarantors Placeholders) ... */}
+         <div style={{marginTop: '30px'}}>
+            <strong>ඇපකරුවන් :</strong>
+            <div style={{marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end'}}>
+                <div style={{width: '65%', marginBottom: '20px'}}>
+                1. නම: <span>{formData.guarantor1Name || '...........................................'}</span>
+                </div>
+                <div style={{textAlign: 'center', width: '30%'}}>
+                <div id="g1-sig-placeholder" style={{width: '100%', height: '40px', borderBottom: '1px dotted #000', position: 'relative'}}></div>
+                <span style={{fontSize: '12px'}}>අත්සන</span>
+                </div>
             </div>
-            
-            <div style={{textAlign: 'center', width: '30%'}}>
-               {/* Signature Line */}
-               <div id="g1-sig-placeholder" style={{width: '100%', height: '40px', borderBottom: '1px dotted #000', position: 'relative'}}></div>
-               {/* Label */}
-               <span style={{fontSize: '12px'}}>අත්සන</span>
+            <div style={{marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end'}}>
+                <div style={{width: '65%', marginBottom: '20px'}}>
+                2. නම: <span>{formData.guarantor2Name || '...........................................'}</span>
+                </div>
+                <div style={{textAlign: 'center', width: '30%'}}>
+                <div id="g2-sig-placeholder" style={{width: '100%', height: '40px', borderBottom: '1px dotted #000', position: 'relative'}}></div>
+                <span style={{fontSize: '12px'}}>අත්සන</span>
+                </div>
             </div>
-          </div>
-
-          {/* Guarantor 2 */}
-          <div style={{marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end'}}>
-            {/* Added marginBottom to lift the name up */}
-            <div style={{width: '65%', marginBottom: '20px'}}>
-              2. නම: <span>{formData.guarantor2Name || '...........................................'}</span>
-            </div>
-
-            <div style={{textAlign: 'center', width: '30%'}}>
-               {/* Signature Line */}
-               <div id="g2-sig-placeholder" style={{width: '100%', height: '40px', borderBottom: '1px dotted #000', position: 'relative'}}></div>
-               {/* Label */}
-               <span style={{fontSize: '12px'}}>අත්සන</span>
-            </div>
-          </div>
-        </div>
+         </div>
       </div>
       
-      {/* --- GUARANTOR INPUTS & BUTTONS --- */}
+      {/* --- GUARANTOR INPUTS --- */}
       <div style={{marginTop: '20px', background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #dee2e6'}}>
         <h4 style={{marginTop: 0, marginBottom: '10px'}}>Witness / Guarantor Details</h4>
-        
-        {/* Guarantor 1 Input */}
         <div style={{marginBottom: '15px'}}>
           <label style={{display:'block', fontSize:'0.9rem', marginBottom:'5px'}}>Guarantor 1 Name:</label>
           <div style={{display: 'flex', gap: '10px'}}>
-            <input 
-              type="text" 
-              className="form-input" 
-              style={{marginBottom: 0}}
-              placeholder="Enter Name"
-              value={formData.guarantor1Name}
-              onChange={(e) => updateGuarantorName('guarantor1Name', e.target.value)}
-            />
-            <button 
-              type="button" 
-              onClick={() => openWitnessModal('g1')}
-              style={{padding: '8px 12px', borderRadius: '5px', border: '1px solid #ccc', background: formData.guarantor1Sign ? '#d4edda' : '#fff', cursor: 'pointer', whiteSpace: 'nowrap'}}
-            >
+            <input type="text" className="form-input" style={{marginBottom: 0}} placeholder="Enter Name" value={formData.guarantor1Name} onChange={(e) => updateGuarantorName('guarantor1Name', e.target.value)} />
+            <button type="button" onClick={() => openWitnessModal('g1')} style={{padding: '8px 12px', borderRadius: '5px', border: '1px solid #ccc', background: formData.guarantor1Sign ? '#d4edda' : '#fff', cursor: 'pointer', whiteSpace: 'nowrap'}}>
               {formData.guarantor1Sign ? '✅ Signed' : '✍️ Sign'}
             </button>
           </div>
         </div>
-
-        {/* Guarantor 2 Input */}
         <div>
           <label style={{display:'block', fontSize:'0.9rem', marginBottom:'5px'}}>Guarantor 2 Name:</label>
           <div style={{display: 'flex', gap: '10px'}}>
-            <input 
-              type="text" 
-              className="form-input" 
-              style={{marginBottom: 0}}
-              placeholder="Enter Name"
-              value={formData.guarantor2Name}
-              onChange={(e) => updateGuarantorName('guarantor2Name', e.target.value)}
-            />
-            <button 
-              type="button" 
-              onClick={() => openWitnessModal('g2')}
-              style={{padding: '8px 12px', borderRadius: '5px', border: '1px solid #ccc', background: formData.guarantor2Sign ? '#d4edda' : '#fff', cursor: 'pointer', whiteSpace: 'nowrap'}}
-            >
+            <input type="text" className="form-input" style={{marginBottom: 0}} placeholder="Enter Name" value={formData.guarantor2Name} onChange={(e) => updateGuarantorName('guarantor2Name', e.target.value)} />
+            <button type="button" onClick={() => openWitnessModal('g2')} style={{padding: '8px 12px', borderRadius: '5px', border: '1px solid #ccc', background: formData.guarantor2Sign ? '#d4edda' : '#fff', cursor: 'pointer', whiteSpace: 'nowrap'}}>
               {formData.guarantor2Sign ? '✅ Signed' : '✍️ Sign'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* --- MAIN CUSTOMER SIGNATURE --- */}
+      {/* --- MAIN SIGNATURE (Optimized) --- */}
       <label style={{marginTop: '20px', display: 'block', fontWeight: 'bold'}}>Customer Signature (Required)</label>
       <div className="signature-box" style={{border: '1px dashed #000', borderRadius: '8px', background: '#fff'}}>
-        <SignatureCanvas ref={sigPadRef} penColor='black' canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '150px'} }} />
+        <SignatureCanvas 
+            ref={sigPadRef} 
+            penColor='black' 
+            minWidth={0.5} 
+            maxWidth={2.0} 
+            velocityFilterWeight={0.7} 
+            canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '150px'} }} 
+        />
       </div>
       <button type="button" className="clear-button" onClick={clearSignature} style={{marginTop: '10px'}}>Clear Signature</button>
 
@@ -470,25 +439,31 @@ export const RentalStep3 = ({ formData, setFormData, car, owner, totalCost, agre
         </button>
       </div>
 
-      {/* --- MODAL FOR WITNESS SIGNATURE --- */}
+      {/* --- WITNESS MODAL (Optimized) --- */}
       {activeSigner && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000
         }}>
-          <div style={{background: '#fff', padding: '20px', borderRadius: '8px', width: '90%', maxWidth: '400px'}}>
+          <div style={{background: '#fff', padding: '20px', borderRadius: '8px', width: '95%', maxWidth: '400px'}}>
             <h3>Sign: {activeSigner === 'g1' ? 'Guarantor 1' : 'Guarantor 2'}</h3>
-            <div style={{border: '1px solid #ccc', height: '150px', marginBottom: '10px'}}>
-              <SignatureCanvas ref={witnessSigPad} penColor='black' canvasProps={{ width: 300, height: 150, className: 'sig-canvas' }} />
+            <div style={{border: '1px solid #ccc', height: '180px', marginBottom: '10px', background: '#fff'}}>
+              <SignatureCanvas 
+                ref={witnessSigPad} 
+                penColor='black' 
+                minWidth={0.5} 
+                maxWidth={2.0}
+                velocityFilterWeight={0.7}
+                canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '100%'} }} 
+              />
             </div>
             <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
-              <button type="button" onClick={closeWitnessModal} style={{padding: '8px 15px', background: '#ccc', border: 'none', borderRadius: '4px'}}>Cancel</button>
-              <button type="button" onClick={saveWitnessSignature} style={{padding: '8px 15px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px'}}>Save Signature</button>
+              <button type="button" onClick={closeWitnessModal} style={{padding: '10px 15px', background: '#ccc', border: 'none', borderRadius: '4px'}}>Cancel</button>
+              <button type="button" onClick={saveWitnessSignature} style={{padding: '10px 15px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px'}}>Save</button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

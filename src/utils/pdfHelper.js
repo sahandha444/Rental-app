@@ -69,7 +69,7 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
 
   // -------------------------------------
 
-  // 4. Render Offscreen
+// 4. Render Offscreen
   const container = document.createElement("div");
   container.style.position = "absolute";
   container.style.left = "-9999px"; 
@@ -78,9 +78,9 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   container.appendChild(clone);
   document.body.appendChild(container);
 
-  const fullHeight = clone.scrollHeight + 30; 
+  // 👇 CHANGED: Increased buffer from 30 to 150 to prevent cut-off
+  const fullHeight = clone.scrollHeight + 150; 
   
-  // Wait for rendering
   await new Promise(r => setTimeout(r, 150));
 
   const canvas = await html2canvas(clone, {
@@ -88,15 +88,14 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
     useCORS: true,
     backgroundColor: "#ffffff",
     width: 794,
-    height: fullHeight,
+    height: fullHeight,       // <--- Uses the new taller height
     windowWidth: 794,
-    windowHeight: fullHeight,
+    windowHeight: fullHeight, // <--- Ensures the window sees the whole thing
     scrollY: 0,
     logging: false,
   });
 
   document.body.removeChild(container);
-
   // 5. Generate PDF
   const imgData = canvas.toDataURL("image/jpeg", 0.8); // JPEG for speed
   
