@@ -22,6 +22,7 @@ body {
   color: var(--text-color);
   /* Crucial: Prevents horizontal scroll when menu is off-screen */
   overflow-x: hidden; 
+  padding-bottom: 10rem;
 }
 
 /* Stops content from shifting when menu is open */
