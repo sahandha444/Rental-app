@@ -131,6 +131,14 @@ function App() {
 
         </Routes>
       </main>
+      {/* 🆕 IDENTIFICATION FOOTER */}
+      {session && (
+        <footer className="app-footer">
+          <p>
+            Developed by <a  href='https://www.linkedin.com/in/sahan-jayasinghe-9378472a9/'><strong>J.G.D.S.D. Jayasinghe</strong></a> | © {new Date().getFullYear()} Yalu Tours and Rent a Car
+          </p>
+        </footer>
+      )}
     </BrowserRouter>
   );
 }

@@ -331,6 +331,53 @@ left: 0;
   font-size: 0.95rem;
 }
 
+/* --- 1. Background Watermark --- */
+.app-watermark {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60vh; /* Adjust size based on screen height */
+  height: 60vh;
+  /* Use your logo as the watermark */
+  background-image: url('./assets/yalu-tours-logo.png'); 
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.04; /* Very faint (4%) */
+  z-index: -1; /* Send to back */
+  pointer-events: none; /* Click-through */
+}
+
+/* --- 2. Identification Footer --- */
+.app-footer {
+  text-align: center;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  background-color: var(--bg-color); /* Matches page bg */
+}
+
+.app-footer strong,a {
+  text-decoration: none;
+  color: var(--primary-color);
+}
+
+/* Ensure footer doesn't overlap on mobile */
+@media (max-width: 600px) {
+  .app-watermark {
+    width: 80vw; /* Wider on mobile */
+    height: 80vw;
+    opacity: 0.03; /* Even fainter on mobile */
+  }
+  
+  .app-footer {
+    padding-bottom: 2rem; /* Extra space for bottom safe areas */
+  }
+}
+
 /* --- Responsive Breakpoints (Mobile Only Styles) --- */
 @media (max-width: 768px) {
   .desktop-links {
