@@ -35,10 +35,7 @@ const NewRentalPage = () => {
   // --- State ---
   const [step, setStep] = useState(1); 
   const [car, setCar] = useState(null); 
-  
-  // 🆕 NEW: Owner State
   const [owner, setOwner] = useState(null);
-
   const [loading, setLoading] = useState(true); 
   const [submitting, setSubmitting] = useState(false); 
   const [statusMsg, setStatusMsg] = useState(''); 
@@ -46,11 +43,18 @@ const NewRentalPage = () => {
   const [pastCustomers, setPastCustomers] = useState([]);
 
   const [formData, setFormData] = useState({
+    // Customer Data
     customerName: '', customerID: '', customerPhone: '', customerAddress: '',
     licensePhotoFront: null, licensePhotoBack: null, idCardPhotoFront: null, idCardPhotoBack: null,
     existingLicenseFront: null, existingLicenseBack: null, existingIdFront: null, existingIdBack: null,
     remarksStep1: '',
+    
+    // Rental Data
     rentalDays: 1, startMileage: '', advancePayment: '', mileagePhoto: null, extraCarPhotos: [], remarksStep2: '',
+    
+    // Guarantor Data
+    guarantor1Name: '', guarantor1Sign: null,
+    guarantor2Name: '', guarantor2Sign: null,
   });
 
   // --- Data Fetching ---
@@ -82,17 +86,9 @@ const NewRentalPage = () => {
           setPastCustomers(uniqueCustomers);
         }
 
-        // 3. 🆕 NEW: Fetch Owner Details
-        // We assume there is at least one row. We take the first one.
-        const { data: ownerData, error: ownerError } = await supabase
-          .from('owner') // <--- Your new table
-          .select('*')
-          .limit(1)
-          .single();
-        
-        if (!ownerError && ownerData) {
-          setOwner(ownerData);
-        }
+        // 3. Fetch Owner
+        const { data: ownerData } = await supabase.from('owner').select('*').limit(1).single();
+        if (ownerData) setOwner(ownerData);
 
       } catch (err) {
         console.warn("Fetch Error:", err.message);
@@ -120,37 +116,23 @@ const NewRentalPage = () => {
     }
   };
 
-  const showFormError = (message) => {
-    setError(message);
-    window.scrollTo(0, 0); 
-  };
-
   const nextStep = () => {
+    // Basic validation
     if (step === 1) {
-      const hasLicenseFront = formData.licensePhotoFront || formData.existingLicenseFront;
-      const hasLicenseBack = formData.licensePhotoBack || formData.existingLicenseBack;
-
-      if (!formData.customerName || !formData.customerID || !formData.customerPhone || !formData.customerAddress) {
-        showFormError("Please fill in all Customer Details.");
-        return;
-      }
-      if (!hasLicenseFront || !hasLicenseBack) {
-        showFormError("Driver's License photos (Front & Back) are required.");
+      const hasLicense = (formData.licensePhotoFront || formData.existingLicenseFront) && (formData.licensePhotoBack || formData.existingLicenseBack);
+      if (!formData.customerName || !formData.customerID || !formData.customerPhone || !hasLicense) {
+        setError("Please fill required fields (Name, Phone, ID, License Photos).");
+        window.scrollTo(0, 0);
         return;
       }
     }
-
     if (step === 2) {
-       if (!formData.rentalDays || !formData.startMileage || !formData.advancePayment) {
-        showFormError("Please enter Rental Days, Start Mileage, and Advance Payment.");
-        return;
-      }
-      if (!formData.mileagePhoto) {
-        showFormError("A photo of the dashboard mileage is required.");
+       if (!formData.rentalDays || !formData.startMileage || !formData.mileagePhoto) {
+        setError("Please fill required fields (Days, Mileage, Dashboard Photo).");
+        window.scrollTo(0, 0);
         return;
       }
     }
-
     setError(null); 
     setStep(s => s + 1);
   };
@@ -188,7 +170,7 @@ const NewRentalPage = () => {
         Promise.all(formData.extraCarPhotos.map(p => compressImage(p))) 
       ]);
 
-      // 2. Uploading
+      // 2. Uploading Photos
       setStatusMsg('Uploading Files... ☁️');
       const [lf, lb, if_, ib, mp, sigFile] = await Promise.all([
         uploadFile(cmpLicenseFront, 'licenses'), 
@@ -201,13 +183,25 @@ const NewRentalPage = () => {
       const sigUrl = await uploadFile(sigFile, 'signatures');
       const extraPhotos = await Promise.all(cmpExtraPhotos.map(f => uploadFile(f, 'car-conditions')));
 
-      // 3. PDF Generation
+      // 3. Uploading Guarantor Signatures
+      let g1SignUrl = null;
+      if (formData.guarantor1Sign) {
+        const g1File = dataURLtoFile(formData.guarantor1Sign, `${uuidv4()}-g1.png`);
+        g1SignUrl = await uploadFile(g1File, 'signatures');
+      }
+      let g2SignUrl = null;
+      if (formData.guarantor2Sign) {
+        const g2File = dataURLtoFile(formData.guarantor2Sign, `${uuidv4()}-g2.png`);
+        g2SignUrl = await uploadFile(g2File, 'signatures');
+      }
+
+      // 4. PDF Generation
       setStatusMsg('Creating Agreement... 📄');
-      // Pass sigPad.current directly
+      // Fix: Pass sigPad.current directly
       const pdfFile = await generateAgreementPDF(agreementBoxRef.current, sigPad.current, formData);
       const pdfUrl = await uploadFile(pdfFile, 'agreements');
 
-      // 4. Saving to Database
+      // 5. Saving to Database
       setStatusMsg('Finalizing... 💾');
       await supabase.from('rentals').insert([{ 
           car_id: car.id, car_name: car.name,
@@ -217,16 +211,24 @@ const NewRentalPage = () => {
           license_photo_back_url: lb || formData.existingLicenseBack,
           id_card_front_url: if_ || formData.existingIdFront,
           id_card_back_url: ib || formData.existingIdBack,
+          
           remarks_step1: formData.remarksStep1, rental_days: formData.rentalDays,
           start_mileage: formData.startMileage, advance_payment: formData.advancePayment,
           mileage_photo_url: mp, extra_car_photos: extraPhotos, remarks_step2: formData.remarksStep2,
           signature_url: sigUrl, agreement_pdf_url: pdfUrl,
+          
+          // ✅ GUARANTOR DATA (This was missing in your paste)
+          guarantor1_name: formData.guarantor1Name,
+          guarantor1_signature_url: g1SignUrl,
+          guarantor2_name: formData.guarantor2Name,
+          guarantor2_signature_url: g2SignUrl,
+
           rental_start_date: new Date(), status: 'active',
       }]);
       
       await supabase.from('vehicles').update({ status: 'Rented', current_mileage: formData.startMileage }).eq('id', car.id);
       
-      // 5. Send SMS
+      // 6. Send SMS
       try {
         await supabase.functions.invoke('send-local-sms', {
           body: { 
@@ -258,8 +260,20 @@ const NewRentalPage = () => {
       <form className="rental-form" onSubmit={handleSubmit}>
         {step === 1 && <RentalStep1 formData={formData} setFormData={setFormData} car={car} pastCustomers={pastCustomers} handleTextChange={handleTextChange} handleFileChange={handleFileChange} nextStep={nextStep} />}
         {step === 2 && <RentalStep2 formData={formData} handleTextChange={handleTextChange} handleFileChange={handleFileChange} prevStep={prevStep} nextStep={nextStep} car={car} totalCost={(formData.rentalDays * (car.daily_rate || 0)).toFixed(2)} />}
-        {/* 🆕 PASSED 'owner' prop to Step 3 */}
-        {step === 3 && <RentalStep3 formData={formData} car={car} owner={owner} totalCost={(formData.rentalDays * (car.daily_rate || 0)).toFixed(2)} agreementBoxRef={agreementBoxRef} sigPadRef={sigPad} clearSignature={clearSignature} prevStep={prevStep} submitting={submitting} />}
+        {step === 3 && (
+          <RentalStep3 
+            formData={formData} 
+            setFormData={setFormData}
+            car={car} 
+            owner={owner} 
+            totalCost={(formData.rentalDays * (car.daily_rate || 0)).toFixed(2)} 
+            agreementBoxRef={agreementBoxRef} 
+            sigPadRef={sigPad} 
+            clearSignature={clearSignature} 
+            prevStep={prevStep} 
+            submitting={submitting} 
+          />
+        )}
       </form>
       
       {submitting && (

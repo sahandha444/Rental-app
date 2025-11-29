@@ -30,26 +30,44 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   clone.style.maxHeight = "none";
   clone.style.overflow = "visible";
 
-  // 3. INJECT SIGNATURE INTO PLACEHOLDER (New Logic)
-  // Find the specific placeholder div we added in RentalStep3
-  const sigPlaceholder = clone.querySelector('#customer-sig-placeholder');
+  // --- 3. INJECT SIGNATURES (The Missing Part) ---
 
-  if (sigPlaceholder && !signatureCanvas.isEmpty()) {
-    const sigImg = document.createElement("img");
-    sigImg.src = signatureCanvas.toDataURL('image/png'); // PNG for transparency
-    
-    // Style it to fit perfectly on the line
-    sigImg.style.maxHeight = "60px"; // Fit height
-    sigImg.style.maxWidth = "100%";  // Fit width
-    sigImg.style.position = "absolute"; 
-    sigImg.style.bottom = "5px"; // Sit nicely on the dotted line
-    sigImg.style.left = "50%";
-    sigImg.style.transform = "translateX(-50%)"; // Center it
-    
-    sigPlaceholder.appendChild(sigImg);
-  } else {
-    console.warn("Signature placeholder not found or empty signature.");
+  // Helper to place an image into a placeholder ID
+  const injectSignature = (placeholderId, dataUrl) => {
+    const placeholder = clone.querySelector(`#${placeholderId}`);
+    if (placeholder && dataUrl) {
+      const img = document.createElement("img");
+      img.src = dataUrl;
+      
+      // Styling to make it sit perfectly on the dotted line
+      img.style.maxHeight = "40px"; // Fit height
+      img.style.maxWidth = "100%";
+      img.style.position = "absolute";
+      img.style.bottom = "5px"; 
+      img.style.left = "50%";
+      img.style.transform = "translateX(-50%)"; // Center horizontally
+      img.style.zIndex = "10";
+      
+      placeholder.appendChild(img);
+    }
+  };
+
+  // A. Customer Signature (From Live Canvas)
+  if (!signatureCanvas.isEmpty()) {
+    injectSignature('customer-sig-placeholder', signatureCanvas.toDataURL('image/png'));
   }
+
+  // B. Guarantor 1 Signature (From Saved Data)
+  if (formData.guarantor1Sign) {
+    injectSignature('g1-sig-placeholder', formData.guarantor1Sign);
+  }
+
+  // C. Guarantor 2 Signature (From Saved Data)
+  if (formData.guarantor2Sign) {
+    injectSignature('g2-sig-placeholder', formData.guarantor2Sign);
+  }
+
+  // -------------------------------------
 
   // 4. Render Offscreen
   const container = document.createElement("div");
@@ -62,7 +80,8 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
 
   const fullHeight = clone.scrollHeight + 30; 
   
-  await new Promise(r => setTimeout(r, 100));
+  // Wait for rendering
+  await new Promise(r => setTimeout(r, 150));
 
   const canvas = await html2canvas(clone, {
     scale: 1.5,
@@ -79,7 +98,7 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   document.body.removeChild(container);
 
   // 5. Generate PDF
-  const imgData = canvas.toDataURL("image/png"); 
+  const imgData = canvas.toDataURL("image/jpeg", 0.8); // JPEG for speed
   
   const pdf = new jsPDF("p", "pt", "a4");
   const pageWidth = pdf.internal.pageSize.width; 
@@ -92,13 +111,14 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   let heightLeft = pdfHeight;
   let position = 0;
 
-  pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+  // Add pages
+  pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight, '', 'FAST');
   heightLeft -= pageHeight;
 
   while (heightLeft > 0) {
     position -= pageHeight;
     pdf.addPage();
-    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+    pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight, '', 'FAST');
     heightLeft -= pageHeight;
   }
 

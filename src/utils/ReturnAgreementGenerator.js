@@ -23,8 +23,9 @@ export const generateReturnAgreementPDF = async (rental, car, returnData) => {
     <div style="${styles.container}">
       
       <div style="${styles.paragraph}">
-        පදිංචි <span style="${styles.boldUnderline}">${rental.customer_address}</span>
-        (ජා.හැ.අංක. <span style="${styles.boldUnderline}">${rental.customer_id}</span>) මා විසින් 
+        <span style="${styles.boldUnderline}">${rental.customer_address}</span> හි පදිංචි 
+        <span style="${styles.boldUnderline}">${rental.customer_name}</span>
+        (ජා.හැ.අංක. <span style="${styles.boldUnderline}">${rental.customer_id}</span>) වන මා විසින් 
         මාතර යාළුවෝ ටුවර්ස් ඇන්ඩ් රෙන්ට් අ කාර් ආයතනයෙන් අංක 
         <span style="${styles.boldUnderline}">${car.plate_number}</span> දරණ 
         <span style="${styles.boldUnderline}">${car.name}</span> වර්ගයේ වාහනය 
