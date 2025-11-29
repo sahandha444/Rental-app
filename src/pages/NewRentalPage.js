@@ -35,6 +35,10 @@ const NewRentalPage = () => {
   // --- State ---
   const [step, setStep] = useState(1); 
   const [car, setCar] = useState(null); 
+  
+  // 🆕 NEW: Owner State
+  const [owner, setOwner] = useState(null);
+
   const [loading, setLoading] = useState(true); 
   const [submitting, setSubmitting] = useState(false); 
   const [statusMsg, setStatusMsg] = useState(''); 
@@ -54,17 +58,17 @@ const NewRentalPage = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // 1. Fetch Car
         const { data: carData, error: carError } = await supabase.from('vehicles').select('*').eq('id', parseInt(carId, 10)).single();
         if (carError) throw carError;
         setCar(carData);
         setFormData(prev => ({ ...prev, startMileage: carData.current_mileage || '' }));
 
-        const { data: rentalsData, error: rentalsError } = await supabase
+        // 2. Fetch Past Customers
+        const { data: rentalsData } = await supabase
           .from('rentals')
           .select('customer_name, customer_id, customer_phone, customer_address, license_photo_front_url, license_photo_back_url, id_card_front_url, id_card_back_url, rental_start_date') 
           .order('rental_start_date', { ascending: false });
-
-        if (rentalsError) throw rentalsError;
 
         if (rentalsData) {
           const uniqueCustomers = [];
@@ -77,6 +81,19 @@ const NewRentalPage = () => {
           }
           setPastCustomers(uniqueCustomers);
         }
+
+        // 3. 🆕 NEW: Fetch Owner Details
+        // We assume there is at least one row. We take the first one.
+        const { data: ownerData, error: ownerError } = await supabase
+          .from('owner') // <--- Your new table
+          .select('*')
+          .limit(1)
+          .single();
+        
+        if (!ownerError && ownerData) {
+          setOwner(ownerData);
+        }
+
       } catch (err) {
         console.warn("Fetch Error:", err.message);
         if (!car) setError("Error fetching data.");
@@ -109,9 +126,7 @@ const NewRentalPage = () => {
   };
 
   const nextStep = () => {
-    // Validate Step 1: Customer Details
     if (step === 1) {
-      // Check if we have photos (either newly uploaded OR existing from past customer)
       const hasLicenseFront = formData.licensePhotoFront || formData.existingLicenseFront;
       const hasLicenseBack = formData.licensePhotoBack || formData.existingLicenseBack;
 
@@ -125,26 +140,21 @@ const NewRentalPage = () => {
       }
     }
 
-    // Validate Step 2: Rental Details
     if (step === 2) {
-       // Check if required numbers are entered
        if (!formData.rentalDays || !formData.startMileage || !formData.advancePayment) {
         showFormError("Please enter Rental Days, Start Mileage, and Advance Payment.");
         return;
       }
-      // Check for mileage photo
       if (!formData.mileagePhoto) {
         showFormError("A photo of the dashboard mileage is required.");
         return;
       }
     }
 
-    // If validation passes, clear errors and move forward
     setError(null); 
     setStep(s => s + 1);
   };
 
-  
   const prevStep = () => setStep(s => s - 1);
   const clearSignature = () => sigPad.current.clear();
 
@@ -217,14 +227,12 @@ const NewRentalPage = () => {
       await supabase.from('vehicles').update({ status: 'Rented', current_mileage: formData.startMileage }).eq('id', car.id);
       
       // 5. Send SMS
-      // We send the 'pdfUrl' (Long Link) and the backend handles the shortening.
       try {
         await supabase.functions.invoke('send-local-sms', {
           body: { 
             customerPhone: formData.customerPhone,
             customerName: formData.customerName,
-            agreementUrl: pdfUrl, // <--- Backend will shorten this!
-            link: pdfUrl, // Send as 'link' too for compatibility with new backend
+            link: pdfUrl, 
             type: 'agreement'
           }
         });
@@ -250,7 +258,8 @@ const NewRentalPage = () => {
       <form className="rental-form" onSubmit={handleSubmit}>
         {step === 1 && <RentalStep1 formData={formData} setFormData={setFormData} car={car} pastCustomers={pastCustomers} handleTextChange={handleTextChange} handleFileChange={handleFileChange} nextStep={nextStep} />}
         {step === 2 && <RentalStep2 formData={formData} handleTextChange={handleTextChange} handleFileChange={handleFileChange} prevStep={prevStep} nextStep={nextStep} car={car} totalCost={(formData.rentalDays * (car.daily_rate || 0)).toFixed(2)} />}
-        {step === 3 && <RentalStep3 formData={formData} car={car} totalCost={(formData.rentalDays * (car.daily_rate || 0)).toFixed(2)} agreementBoxRef={agreementBoxRef} sigPadRef={sigPad} clearSignature={clearSignature} prevStep={prevStep} submitting={submitting} />}
+        {/* 🆕 PASSED 'owner' prop to Step 3 */}
+        {step === 3 && <RentalStep3 formData={formData} car={car} owner={owner} totalCost={(formData.rentalDays * (car.daily_rate || 0)).toFixed(2)} agreementBoxRef={agreementBoxRef} sigPadRef={sigPad} clearSignature={clearSignature} prevStep={prevStep} submitting={submitting} />}
       </form>
       
       {submitting && (

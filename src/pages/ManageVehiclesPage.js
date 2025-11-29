@@ -99,7 +99,7 @@ const ManageVehiclesPage = () => {
             plate_number: plate,
             current_mileage: parseFloat(mileage),
             daily_rate: parseFloat(dailyRate),
-            extra_mileage_rate: parseFloat(extraMileRate),
+            extra_km_price: parseFloat(extraMileRate),
             extra_hourly_rate: parseFloat(extraHourRate),
             imageUrl: imageUrl, 
             status: 'Available', 

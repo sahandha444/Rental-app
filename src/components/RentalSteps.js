@@ -1,5 +1,6 @@
 // File: src/components/RentalSteps.js
 import React, { useState, useRef } from 'react';
+import OwnerSignature from '../assets/owner_signature.png';
 import SignatureCanvas from 'react-signature-canvas';
 
 // --- 🛠️ HELPER COMPONENT: DUAL UPLOAD BUTTONS ---
@@ -256,8 +257,8 @@ export const RentalStep2 = ({ formData, handleTextChange, handleFileChange, prev
 };
 
 // --- STEP 3: AGREEMENT ---
-export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadRef, clearSignature, prevStep, submitting }) => {
-  // ... (Date calculations remain unchanged) ...
+// --- STEP 3: AGREEMENT ---
+export const RentalStep3 = ({ formData, car, owner, totalCost, agreementBoxRef, sigPadRef, clearSignature, prevStep, submitting }) => {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth() + 1; 
@@ -269,42 +270,44 @@ export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadR
   const rDay = returnDate.getDate();
   const blankStyle = { fontWeight: 'bold', textDecoration: 'underline', padding: '0 5px' };
 
-  // 💡 HELPER: Check both possible column names for the Late Fee Rate
+  // Variables
   const lateFeeRate = car.extra_hourly_rate || car.late_fee_per_hour || '___';
   const extraKmRate = car.extra_km_price || '___';
+  
+  // 🆕 OWNER VARIABLES (with fallback)
+  const ownerName = owner?.name || '____________________';
+  const ownerAddress = owner?.address || '____________________';
+  const ownerNIC = owner?.nic || '____________________';
 
   return (
     <div className="form-step-container">
       <h2>Step 3: Agreement & Confirmation</h2>
       
-      <div 
-        ref={agreementBoxRef}
-        className="agreement-box" 
-        style={{border: '1px solid #ccc', padding: '40px', background: '#fff', fontFamily: '"Iskoola Pota", "Noto Sans Sinhala", Arial, sans-serif', color: '#000', lineHeight: '1.6', fontSize: '13px', textAlign: 'justify'}}
-      >
-        {/* ... (Header and paragraphs 1-4 remain the same) ... */}
+      <div ref={agreementBoxRef} className="agreement-box" style={{border: '1px solid #ccc', padding: '40px', background: '#fff', fontFamily: '"Iskoola Pota", "Noto Sans Sinhala", Arial, sans-serif', color: '#000', lineHeight: '1.6', fontSize: '13px', textAlign: 'justify'}}>
         <h3 style={{textAlign: 'center', textDecoration: 'underline', marginBottom: '15px', fontSize: '18px'}}>එකඟතා ගිවිසුමයි</h3>
         <p><span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> දින දීය.</p>
         
-        {/* ... (Skipping to the relevant clauses for brevity - Ensure you keep the full text!) ... */}
-        <p>පොල් පිටියවත්ත, රස්සන්න්දෙණිය, දෙවිනුවර පදිංචි ජී. එච්. එස්. තාරක වන මම සහ <span style={blankStyle}> {formData.customerAddress} </span> පදිංචි <span style={blankStyle}> {formData.customerName} </span> වන දෙවන පාර්ශවය වන මම, <span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> වන දින මාතර දි ඇති කර ගන්නා ලද අංක <span style={blankStyle}>{car.plate_number}</span> දරණ <span style={blankStyle}> {car.name}</span> වර්ගයේ වාහනය කුලියට ලබා ගැනීම පිළිබඳ ගිවිසුම මෙසේය.</p>
+        {/* 🆕 UPDATED PARAGRAPH WITH OWNER DATA */}
+        <p>
+          <span >{ownerAddress}</span> පදිංචි <span>{ownerName}</span> වන මම සහ 
+          <span style={blankStyle}> {formData.customerAddress} </span> පදිංචි 
+          <span style={blankStyle}> {formData.customerName} </span> වන දෙවන පාර්ශවය වන මම, 
+          <span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> වන දින 
+          මාතර දි ඇති කර ගන්නා ලද අංක <span style={blankStyle}>{car.plate_number}</span> දරණ 
+          <span style={blankStyle}> {car.name}</span> වර්ගයේ වාහනය කුලියට ලබා ගැනීම පිළිබඳ ගිවිසුම මෙසේය.
+        </p>
 
         <div style={{marginTop: '10px'}}>
           <p>1). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය දෙවන පාර්ශවය විසින් කුලී පදනම මත පාවිච්චි කිරීමට ලබා ගැනීම සිදු විය.</p>
           <p>2). ඉහත කී අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය <span style={blankStyle}>{year}/{month}/{day}</span> දින ඉහත කී දෙවන පාර්ශවය වන මම පරීක්ෂා කර බලා ධාවනය කිරීමට හැකි හොඳ තත්වයේ පවතින බවට සැහීමකට පත් වී මෙම වාහනයේ යතුර, රක්ෂණ සහතිකය සහ ආදායම් බලපත්‍රයේ පිටපත ද සමග භාර ගතිමි.</p>
           <p>3). ඉහත අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය භාරගත් මොහොතේ සිට සියළු වගකීම් දෙවන පාර්ශවය වන මා සතු වන අතර ඇප වශයෙන් ශ්‍රී ලංකාවේ වලංගු මුදලින් රුපියල් <span style={blankStyle}>{formData.advancePayment || '_______'}</span> ක මුදලක් තැන්පත් කල යුතුවේ. එම මුදල නැවත වාහනය භාරදුන් පසු මෙහි පහත කොන්දේසි වලට යටත්ව ආපසු ගෙවනු ලැබේ.</p>
           <p>4). එනම්, වාහනයට යම්කිසි අලාභ හානියක් කර තිබුණහොත් හෝ අලුත් වැඩියාවක් වාහනය ලබාගත් පුද්ගලයා භාරයේ තිබියදී සිදුවී ඇත්නම් ඒ සඳහා වැයවෙන මුදල් වාහනය භාරගත් අය නොගෙවන්නේ නම් ඉහත කී තැන්පත් මුදලින් අඩු කර ගනු ලැබේ. තැන්පත් මුදල අළුත්වැඩියාව සඳහා ප්‍රමාණවත් නොවේ නම් ඉතිරි මුදල ද වාහනය භාරගත් පාර්ශවය විසින් ආයතනයට ගෙවිය යුතුය.</p>
-          
-          {/* UPDATED CLAUSE 5 (Using extraKmRate variable) */}
           <p>5). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය එක් දිනක් තුල රුපියල් <span style={blankStyle}>{car.daily_rate}</span> ගෙවිය යුතු අතර උපරිම කිලෝ මීටර් <span style={blankStyle}>{car.km_limit_per_day || 100}</span> කට යටත්ව වැඩිවන සෑම කිලෝ මීටරයකටම රුපියල් <span style={blankStyle}>{extraKmRate}</span> බැගින් වාහනය භාරගත් පුද්ගලයා විසින් ගෙවිය යුතු වේ.</p>
-
-          {/* UPDATED CLAUSE 6 (Using lateFeeRate variable) */}
-          <p>6). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය දින දෙකකට වඩා භාරගන්නා අවස්ථාවේදී පහත සඳහන් කරුණු වලට යටත් විය යුතුය.<br/>
-          (අ) <span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> දින පැයට ඉහත භාර ගන්නා වාහනය ඉහත ගිවිසගත් මිල ගණන් වලට යටත්ව <span style={blankStyle}>{rYear}</span> වර්ෂ <span style={blankStyle}>{rMonth}</span> මස <span style={blankStyle}>{rDay}</span> දින පැයට ප්‍රථම භාර දිය යුතුය.<br/>
-          (ආ) එසේ භාර දීමට නොහැකි වන අවස්ථාවකදී ප්‍රමාද වන සැම එක් පැයක් සඳහාම ප්‍රමාද ගාස්තු වශයෙන් රුපියල් <span style={blankStyle}>{lateFeeRate}</span> ක මුදලක් අමතරව ගෙවිය යුතු වේ.</p>
-
-          {/* ... (Clauses 7-18 remain the same) ... */}
-          <p>7). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනයට යම්කිසි අනතුරක් සිදු වුවහොත් වාහනයේ අයිතිකරු වන ජී. එච්. එස්. තාරක යන අයගේ කැමැත්ත පරිදි රක්ෂණ සමාගම මගින් අලාභ මුදල් ලබා ගත්තේද? නැද්ද? යන්න තීරණය වන අතර අලාභ මුදල් ගෙවීම රක්ෂණ සමාගම ප්‍රතික්ෂේප කලහොත් වාහනය පාවිච්චි කිරීමට ලබා ගත් පුද්ගලයා විසින් ඒ සඳහා වැයවන මුදල ගෙවිය යුතුය.</p>
+          <p>6). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය දින දෙකකට වඩා භාරගන්නා අවස්ථාවේදී පහත සඳහන් කරුණු වලට යටත් විය යුතුය.<br/>(අ) <span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> දින පැයට ඉහත භාර ගන්නා වාහනය ඉහත ගිවිසගත් මිල ගණන් වලට යටත්ව <span style={blankStyle}>{rYear}</span> වර්ෂ <span style={blankStyle}>{rMonth}</span> මස <span style={blankStyle}>{rDay}</span> දින පැයට ප්‍රථම භාර දිය යුතුය.<br/>(ආ) එසේ භාර දීමට නොහැකි වන අවස්ථාවකදී ප්‍රමාද වන සැම එක් පැයක් සඳහාම ප්‍රමාද ගාස්තු වශයෙන් රුපියල් <span style={blankStyle}>{lateFeeRate}</span> ක මුදලක් අමතරව ගෙවිය යුතු වේ.</p>
+          
+          {/* 🆕 UPDATED CLAUSE 7 WITH OWNER NAME */}
+          <p>7). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනයට යම්කිසි අනතුරක් සිදු වුවහොත් වාහනයේ අයිතිකරු වන <span>{ownerName}</span> යන අයගේ කැමැත්ත පරිදි රක්ෂණ සමාගම මගින් අලාභ මුදල් ලබා ගත්තේද? නැද්ද? යන්න තීරණය වන අතර අලාභ මුදල් ගෙවීම රක්ෂණ සමාගම ප්‍රතික්ෂේප කලහොත් වාහනය පාවිච්චි කිරීමට ලබා ගත් පුද්ගලයා විසින් ඒ සඳහා වැයවන මුදල ගෙවිය යුතුය.</p>
+          
           <p>8). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය භාරගත් තැනත්තා භාරයේ තිබියදී යම්කිසි අනතුරක් සිදුවුව හොත් එම වාහනය අලුත්වැඩියා කිරීම සඳහා ගරාජයක් තුල දින කිහිපයක් තැබීමට සිදු වුවහොත් එසේ ගරාජය තුල තිබෙනා දින ගණන සඳහා වාහන හිමිකරුට සිදුවන පාඩුව දිනකට රුපියල් <span style={blankStyle}>{car.daily_rate}</span> බැගින් වාහන හිමිකරුට ගෙවිය යුතු වේ.</p>
           <p>9). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය නීති විරෝධී කටයුතු සඳහා යොදා ගැනීම තහනම් වන අතර මත් වතුර බී ධාවනය කිරීම ද තහනම් වේ.</p>
           <p>10). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය කිසියම් මාර්ග නීති කඩකිරීමකදී හෝ හදිසි අනතුරකදී හෝ වෙනත් අයෙකුට වාහනය ධාවනය කිරීමට තිබියදී එවැනි යම් අනතුරක් හෝ මාර්ග නීති කඩ කිරීමක් හෝ නීතී විරෝධී කටයුත්තක් සඳහා යොදා ගෙන තිබුන හොත් එකි වගකීම සම්පූර්ණයෙන්ම වාහනය භාරගත් පුද්ගලයා විසින් ගෙවිය යුතු වේ. වාහනයේ හිමිකරු ඒ සඳහා වග කියනු නොලැබේ.</p>
@@ -318,22 +321,14 @@ export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadR
           <p>18). අප ආයතනය කුලී පදනම මත ලබා දෙනු ලබන්නේ මගී ප්‍රවාහන කටයුතු සඳහා පමණක් වන අතර ඉන් බැහැරව නීති විරෝධි කටයුතු (දැව හා සතුන්, මධ්‍යසාර හා ප්‍රචණ්ඩ ක්‍රියා) සඳහා භාවිතය සපුරා තහනම් වේ.</p>
         </div>
 
-        {/* --- SIGNATURES SECTION (UPDATED) --- */}
+        {/* --- SIGNATURES --- */}
         <div style={{marginTop: '40px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px'}}>
-          
-          {/* CUSTOMER (2nd Party) */}
           <div style={{width: '45%'}}>
-            {/* 👇 THIS ID IS CRITICAL FOR PDF PLACEMENT 👇 */}
+            {/* Signature Placeholder */}
             <div 
               id="customer-sig-placeholder"
-              style={{
-                borderBottom: '1px dotted #000', 
-                marginBottom: '5px', 
-                height: '50px', // Increased height slightly for signature space
-                position: 'relative' // Needed for absolute positioning of image
-              }}
+              style={{borderBottom: '1px dotted #000', marginBottom: '5px', height: '50px', position: 'relative'}}
             >
-               {/* The PDF generator will inject the <img> here */}
             </div>
             <div>අත්සන (දෙවන පාර්ශවය)</div>
             <div style={{marginTop: '5px'}}>නම: {formData.customerName}</div>
@@ -341,15 +336,20 @@ export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadR
             <div>ලිපිනය: {formData.customerAddress}</div>
           </div>
 
-          {/* OWNER */}
           <div style={{width: '45%'}}>
-            <div style={{borderBottom: '1px dotted #000', marginBottom: '5px', height: '50px'}}></div>
+            <div >
+             <img src={OwnerSignature} height="50px" alt="Customer Signature" 
+             style={{borderBottom: '1px dotted #000', marginBottom: '5px', position: 'relative'}}>
+             </img>
+            </div>
             <div>අත්සන (හිමිකරු)</div>
-            <div style={{marginTop: '5px'}}>ජා.හැ.අංකය : ..............................</div>
-            <div>ලිපිනය: ...........................................</div>
+            {/* 🆕 UPDATED OWNER NIC & ADDRESS */}
+            <div style={{marginTop: '5px'}}>නම: {ownerName}</div>
+            <div>ජා.හැ.අංකය: {ownerNIC}</div>
+            <div>ලිපිනය: {ownerAddress}</div>
           </div>
-
         </div>
+
         <div style={{marginTop: '30px'}}>
           <strong>ඇපකරුවන් :</strong>
           <div style={{marginTop: '15px', display: 'flex', justifyContent: 'space-between'}}>
@@ -363,7 +363,7 @@ export const RentalStep3 = ({ formData, car, totalCost, agreementBoxRef, sigPadR
         </div>
       </div>
       
-      {/* ... (Canvas and Buttons remain the same) ... */}
+      {/* Canvas & Buttons */}
       <label style={{marginTop: '20px', display: 'block', fontWeight: 'bold'}}>Customer Signature</label>
       <div className="signature-box" style={{border: '1px dashed #000', borderRadius: '8px', background: '#fff'}}>
         <SignatureCanvas ref={sigPadRef} penColor='black' canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '150px'} }} />

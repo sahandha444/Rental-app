@@ -3,21 +3,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { generateInvoicePDF } from '../utils/InvoiceGenerator'; 
-import { generateReturnAgreementPDF } from '../utils/ReturnAgreementGenerator'; // <--- NEW IMPORT
+import { generateReturnAgreementPDF } from '../utils/ReturnAgreementGenerator'; 
 import { dataURLtoFile } from '../utils/pdfHelper'; 
 import { v4 as uuidv4 } from 'uuid';
 import SignatureCanvas from 'react-signature-canvas'; 
-import './ReturnRentalModal.css';
+import './ReturnRentalModal.css'; 
 
 const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  
-  // 🆕 NEW: Status Message State
   const [statusMsg, setStatusMsg] = useState('');
-
   const sigPad = useRef(null);
   
-  // Initialize with Current Date AND Time
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   const defaultDateTime = now.toISOString().slice(0, 16);
@@ -27,59 +23,38 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
   const [damageCost, setDamageCost] = useState(0);
   const [remarks, setRemarks] = useState('');
 
-  // Calculated State
   const [calculations, setCalculations] = useState({
-    extraKm: 0,
-    extraKmCost: 0,
-    lateHours: 0,
-    lateFeeCost: 0,
-    totalDue: 0
+    extraKm: 0, extraKmCost: 0, lateHours: 0, lateFeeCost: 0, totalDue: 0
   });
 
-  // --- 1. Real-time Calculations ---
+  // --- 1. Calculations ---
   useEffect(() => {
     if (!rental || !car) return;
 
-    // A. Mileage Calc
     const startMil = parseFloat(rental.start_mileage) || 0;
     const endMil = parseFloat(endMileage) || startMil;
     const driven = endMil - startMil;
     const allowedKm = (rental.rental_days * (car.km_limit_per_day || 100)); 
     
     let extraKm = 0;
-    if (driven > allowedKm) {
-      extraKm = driven - allowedKm;
-    }
+    if (driven > allowedKm) extraKm = driven - allowedKm;
     const extraKmCost = extraKm * (car.extra_km_price || 0);
 
-    // B. Time/Late Fee Calc
     const startDate = new Date(rental.rental_start_date);
     const expectedReturnDate = new Date(startDate);
     expectedReturnDate.setDate(startDate.getDate() + rental.rental_days);
     
     const actualReturnDate = new Date(returnDateTime);
-
     let lateHours = 0;
     const diffMs = actualReturnDate - expectedReturnDate;
-    
-    if (diffMs > 0) {
-      lateHours = Math.ceil(diffMs / (1000 * 60 * 60));
-    }
+    if (diffMs > 0) lateHours = Math.ceil(diffMs / (1000 * 60 * 60));
     const lateFeeCost = lateHours * (car.late_fee_per_hour || car.extra_hourly_rate || 0);
 
-    // C. Final Total
     const baseCost = rental.rental_days * (car.daily_rate || 0);
     const subTotal = baseCost + extraKmCost + lateFeeCost + parseFloat(damageCost);
     const finalDue = subTotal - (rental.advance_payment || 0);
 
-    setCalculations({
-      extraKm,
-      extraKmCost,
-      lateHours,
-      lateFeeCost,
-      totalDue: finalDue
-    });
-
+    setCalculations({ extraKm, extraKmCost, lateHours, lateFeeCost, totalDue: finalDue });
   }, [endMileage, returnDateTime, damageCost, rental, car]);
 
 
@@ -92,19 +67,18 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     setStatusMsg('Starting Return... 🚀'); 
 
     try {
-      // A. Upload Signature (Customer)
+      // A. Upload Signature (To 'photos' bucket)
       setStatusMsg('Saving Signature... ✍️');
       const sigDataUrl = sigPad.current.toDataURL('image/png');
       const sigFile = dataURLtoFile(sigDataUrl, `return-sig-${rental.id}.png`);
-      const sigFileName = `${uuidv4()}-return-sig.png`;
+      const sigFileName = `signatures/${uuidv4()}-return-sig.png`; // <--- Folder path
       
       const { error: sigError } = await supabase.storage
-        .from('signatures')
+        .from('photos') // <--- USING PHOTOS BUCKET
         .upload(sigFileName, sigFile);
       
       if (sigError) throw sigError;
-      
-      const { data: sigUrlData } = supabase.storage.from('signatures').getPublicUrl(sigFileName);
+      const { data: sigUrlData } = supabase.storage.from('photos').getPublicUrl(sigFileName);
       const signaturePublicUrl = sigUrlData.publicUrl;
 
       // Common Return Data
@@ -115,34 +89,27 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
         lateHours: calculations.lateHours,
         damageCost: parseFloat(damageCost),
         finalTotal: calculations.totalDue,
-        signatureUrl: sigDataUrl // Raw Base64 for PDF generation
+        signatureUrl: sigDataUrl 
       };
 
-      // B. Generate & Upload Invoice (Now with Seal)
+      // B. Generate & Upload Invoice (To 'photos' bucket)
       setStatusMsg('Generating Invoice... 🧾');
       const invoiceFile = await generateInvoicePDF(rental, car, returnData);
-      const invFileName = `invoice-${rental.id}-${uuidv4()}.pdf`;
+      const invFileName = `invoices/invoice-${rental.id}-${uuidv4()}.pdf`; // <--- Folder path
       
-      await supabase.storage.from('invoices').upload(invFileName, invoiceFile);
-      const { data: invUrlData } = supabase.storage.from('invoices').getPublicUrl(invFileName);
+      await supabase.storage.from('photos').upload(invFileName, invoiceFile); // <--- USING PHOTOS BUCKET
+      const { data: invUrlData } = supabase.storage.from('photos').getPublicUrl(invFileName);
 
-      // C. Generate & Upload Return Agreement
+      // C. Generate & Upload Return Agreement (To 'photos' bucket)
       setStatusMsg('Generating Return Doc... 📄');
       const returnDocFile = await generateReturnAgreementPDF(rental, car, returnData);
-      const returnDocName = `return-doc-${rental.id}-${uuidv4()}.pdf`;
+      const returnDocName = `agreements/return-doc-${rental.id}-${uuidv4()}.pdf`; // <--- Folder path
       
-      // 1. Upload the file
-      await supabase.storage.from('agreements').upload(returnDocName, returnDocFile);
-      
-      // 2. ✅ FIXED: Get the Public URL (This line was missing!)
-      const { data: returnDocData } = supabase.storage
-        .from('agreements')
-        .getPublicUrl(returnDocName);
+      await supabase.storage.from('photos').upload(returnDocName, returnDocFile); // <--- USING PHOTOS BUCKET
+      const { data: returnDocData } = supabase.storage.from('photos').getPublicUrl(returnDocName);
 
-      /// D. Update Database
+      // D. Update Database
       setStatusMsg('Updating Database... 💾');
-      
-      // Using unique variable name for error checking
       const { error: rentalUpdateError } = await supabase
         .from('rentals')
         .update({
@@ -152,10 +119,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
           final_total_cost: calculations.totalDue,
           extra_mileage_cost: calculations.extraKmCost,
           return_invoice_pdf_url: invUrlData.publicUrl,
-          
-          // Now 'returnDocData' is defined, so this works:
-          return_agreement_pdf_url: returnDocData.publicUrl, 
-
+          return_agreement_pdf_url: returnDocData.publicUrl, // Save new doc URL
           return_signature_url: signaturePublicUrl, 
           remarks_return: remarks
         })
@@ -166,14 +130,14 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
       // E. Update Car Status
       await supabase.from('vehicles').update({ status: 'Available', current_mileage: endMileage }).eq('id', car.id);
 
-      // F. Send SMS (Invoice Link)
+      // F. Send SMS
       setStatusMsg('Sending SMS... 📲');
       try {
         await supabase.functions.invoke('send-local-sms', {
           body: { 
             customerPhone: rental.customer_phone, 
             customerName: rental.customer_name,
-            link: invUrlData.publicUrl, // Send Invoice
+            link: invUrlData.publicUrl, 
             type: 'return' 
           }
         });
@@ -198,58 +162,32 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
       <div className="modal-content">
         <h2>Return Vehicle: {car.name}</h2>
         
-        {/* Date & Time Picker */}
         <div className="form-group">
           <label>Return Date & Time</label>
-          <input 
-            type="datetime-local" 
-            value={returnDateTime} 
-            onChange={(e) => setReturnDateTime(e.target.value)} 
-            style={{fontSize: '16px', padding: '8px'}}
-          />
+          <input type="datetime-local" value={returnDateTime} onChange={(e) => setReturnDateTime(e.target.value)} style={{fontSize: '16px', padding: '8px'}} />
         </div>
 
         <div className="form-group">
           <label>End Mileage (Start: {rental.start_mileage})</label>
-          <input 
-            type="number" 
-            value={endMileage} 
-            onChange={(e) => setEndMileage(e.target.value)} 
-            placeholder="Enter current km"
-          />
+          <input type="number" value={endMileage} onChange={(e) => setEndMileage(e.target.value)} placeholder="Enter current km" />
         </div>
 
         <div className="form-group">
           <label>Damages / Repair Cost (LKR)</label>
-          <input 
-            type="number" 
-            value={damageCost} 
-            onChange={(e) => setDamageCost(e.target.value)} 
-          />
+          <input type="number" value={damageCost} onChange={(e) => setDamageCost(e.target.value)} />
         </div>
 
         <div className="form-group">
           <label>Remarks</label>
-          <textarea 
-            value={remarks} 
-            onChange={(e) => setRemarks(e.target.value)} 
-          />
+          <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} />
         </div>
 
-        {/* Return Signature */}
         <label style={{marginTop: '10px', display: 'block', fontWeight: 'bold'}}>Return Signature (Customer)</label>
         <div className="signature-box" style={{border: '1px dashed #000', borderRadius: '5px', background: '#fff'}}>
-          <SignatureCanvas 
-            ref={sigPad}
-            penColor='black'
-            canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '120px'} }} 
-          />
+          <SignatureCanvas ref={sigPad} penColor='black' canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '120px'} }} />
         </div>
-        <button type="button" onClick={clearSignature} style={{marginTop: '5px', fontSize: '0.8rem', padding: '5px'}}>
-          Clear Signature
-        </button>
+        <button type="button" onClick={clearSignature} style={{marginTop: '5px', fontSize: '0.8rem', padding: '5px'}}>Clear Signature</button>
 
-        {/* Cost Summary */}
         <div className="summary-box" style={{background: '#f9f9f9', padding: '15px', borderRadius: '8px', marginTop: '15px'}}>
           <p><strong>Extra Km:</strong> {calculations.extraKm} km (+ LKR {calculations.extraKmCost.toFixed(2)})</p>
           <p><strong>Late Hours:</strong> {calculations.lateHours} hrs (+ LKR {calculations.lateFeeCost.toFixed(2)})</p>
@@ -262,28 +200,16 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
 
         <div className="modal-actions" style={{marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
           <button onClick={onClose} className="cancel-btn" disabled={loading}>Cancel</button>
-          <button 
-            onClick={handleConfirmReturn} 
-            className="confirm-btn" 
-            disabled={loading}
-            style={{background: '#28a745', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '5px'}}
-          >
+          <button onClick={handleConfirmReturn} className="confirm-btn" disabled={loading} style={{background: '#28a745', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '5px'}}>
             {loading ? 'Processing...' : 'Confirm Return & Close'}
           </button>
         </div>
 
-        {/* 🆕 STATUS INDICATOR OVERLAY */}
         {loading && (
-          <div style={{
-            position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
-            background: '#333', color: '#fff', padding: '12px 24px', borderRadius: '30px',
-            fontWeight: 'bold', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 10,
-            whiteSpace: 'nowrap'
-          }}>
+          <div style={{position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', background: '#333', color: '#fff', padding: '12px 24px', borderRadius: '30px', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 10, whiteSpace: 'nowrap'}}>
             {statusMsg || 'Processing...'}
           </div>
         )}
-
       </div>
     </div>
   );
