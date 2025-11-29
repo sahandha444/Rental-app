@@ -384,7 +384,7 @@ left: 0;
   }
   
   .app-footer {
-    padding-bottom: 2rem; /* Extra space for bottom safe areas */
+    padding-bottom: 0rem; /* Extra space for bottom safe areas */
   }
 }
 
