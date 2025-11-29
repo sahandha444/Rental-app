@@ -387,6 +387,9 @@ left: 0;
   .app-footer {
     padding-bottom: 0rem; /* Extra space for bottom safe areas */
   }
+  .app-footer a{
+    font-size: 0.6rem;
+  }
 }
 
 /* --- Responsive Breakpoints (Mobile Only Styles) --- */
