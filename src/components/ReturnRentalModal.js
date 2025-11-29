@@ -27,6 +27,19 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     extraKm: 0, extraKmCost: 0, lateHours: 0, lateFeeCost: 0, totalDue: 0
   });
 
+  // --- Helper: Format Date for Display ---
+  const getFormattedDateParts = (isoString) => {
+    const d = new Date(isoString);
+    return {
+      year: String(d.getFullYear()).slice(-2), // Get last 2 digits (e.g., 25)
+      month: d.getMonth() + 1,
+      day: d.getDate(),
+      time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+  };
+
+  const dateParts = getFormattedDateParts(returnDateTime);
+
   // --- 1. Calculations ---
   useEffect(() => {
     if (!rental || !car) return;
@@ -71,10 +84,10 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
       setStatusMsg('Saving Signature... ✍️');
       const sigDataUrl = sigPad.current.toDataURL('image/png');
       const sigFile = dataURLtoFile(sigDataUrl, `return-sig-${rental.id}.png`);
-      const sigFileName = `signatures/${uuidv4()}-return-sig.png`; // <--- Folder path
+      const sigFileName = `signatures/${uuidv4()}-return-sig.png`; 
       
       const { error: sigError } = await supabase.storage
-        .from('photos') // <--- USING PHOTOS BUCKET
+        .from('photos') 
         .upload(sigFileName, sigFile);
       
       if (sigError) throw sigError;
@@ -95,17 +108,17 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
       // B. Generate & Upload Invoice (To 'photos' bucket)
       setStatusMsg('Generating Invoice... 🧾');
       const invoiceFile = await generateInvoicePDF(rental, car, returnData);
-      const invFileName = `invoices/invoice-${rental.id}-${uuidv4()}.pdf`; // <--- Folder path
+      const invFileName = `invoices/invoice-${rental.id}-${uuidv4()}.pdf`; 
       
-      await supabase.storage.from('photos').upload(invFileName, invoiceFile); // <--- USING PHOTOS BUCKET
+      await supabase.storage.from('photos').upload(invFileName, invoiceFile); 
       const { data: invUrlData } = supabase.storage.from('photos').getPublicUrl(invFileName);
 
       // C. Generate & Upload Return Agreement (To 'photos' bucket)
       setStatusMsg('Generating Return Doc... 📄');
       const returnDocFile = await generateReturnAgreementPDF(rental, car, returnData);
-      const returnDocName = `agreements/return-doc-${rental.id}-${uuidv4()}.pdf`; // <--- Folder path
+      const returnDocName = `agreements/return-doc-${rental.id}-${uuidv4()}.pdf`; 
       
-      await supabase.storage.from('photos').upload(returnDocName, returnDocFile); // <--- USING PHOTOS BUCKET
+      await supabase.storage.from('photos').upload(returnDocName, returnDocFile); 
       const { data: returnDocData } = supabase.storage.from('photos').getPublicUrl(returnDocName);
 
       // D. Update Database
@@ -119,7 +132,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
           final_total_cost: calculations.totalDue,
           extra_mileage_cost: calculations.extraKmCost,
           return_invoice_pdf_url: invUrlData.publicUrl,
-          return_agreement_pdf_url: returnDocData.publicUrl, // Save new doc URL
+          return_agreement_pdf_url: returnDocData.publicUrl, 
           return_signature_url: signaturePublicUrl, 
           remarks_return: remarks
         })
@@ -160,11 +173,21 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <h2>Return Vehicle: {car.name}</h2>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <h2>Return: {car.name}</h2>
+          <a 
+            href={rental.agreement_pdf_url} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            style={{fontSize: '0.9rem', color: '#007bff', textDecoration: 'none', fontWeight: '600'}}
+          >
+            📄 View Original
+          </a>
+        </div>
         
         <div className="form-group">
           <label>Return Date & Time</label>
-          <input type="datetime-local" value={returnDateTime} onChange={(e) => setReturnDateTime(e.target.value)} style={{fontSize: '16px', padding: '8px'}} />
+          <input type="datetime-local" value={returnDateTime} onChange={(e) => setReturnDateTime(e.target.value)} />
         </div>
 
         <div className="form-group">
@@ -182,11 +205,25 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
           <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} />
         </div>
 
-        <label style={{marginTop: '10px', display: 'block', fontWeight: 'bold'}}>Return Signature (Customer)</label>
-        <div className="signature-box" style={{border: '1px dashed #000', borderRadius: '5px', background: '#fff'}}>
-          <SignatureCanvas ref={sigPad} penColor='black' canvasProps={{ className: 'sig-canvas', style: {width: '100%', height: '120px'} }} />
+        {/* --- 🆕 UPDATED: Sinhala Return Agreement Text --- */}
+        <div className="declaration-text" style={{fontFamily: '"Iskoola Pota", "Noto Sans Sinhala", sans-serif', fontSize: '0.85rem', lineHeight: '1.6'}}>
+          <strong>ප්‍රකාශය:</strong> <br/>
+          {rental.customer_address} හි පදිංචි <strong>{rental.customer_name}</strong> (ජා.හැ.අංක. {rental.customer_id}) වන මා විසින් 
+          මාතර යාලු ටුවර්ස් ඇන්ඩ් රෙන්ට් අ කාර් ආයතනයෙන් අංක <strong>{car.plate_number}</strong> දරණ <strong>{car.name}</strong> වර්ගයේ වාහනය 
+          ඉහත සඳහන් ගිවිසුම හා කොන්දේසි වලට යටත්ව 20<strong>{dateParts.year}</strong> ක්වූ <strong>{dateParts.month}</strong> මස <strong>{dateParts.day}</strong> දින <strong>{dateParts.time}</strong> ට 
+          වාහනය භාරදුන් බවට මෙයින් සහතික කරමි.
         </div>
-        <button type="button" onClick={clearSignature} style={{marginTop: '5px', fontSize: '0.8rem', padding: '5px'}}>Clear Signature</button>
+
+        {/* Signature */}
+        <div className="signature-section">
+          <label>Customer Return Signature</label>
+          <div className="signature-box">
+            <SignatureCanvas ref={sigPad} penColor='black' canvasProps={{ className: 'sig-canvas' }} />
+          </div>
+          <button type="button" onClick={clearSignature} style={{marginTop: '5px', fontSize: '0.8rem', padding: '5px 10px', background: '#f8f9fa', border: '1px solid #ccc', borderRadius: '4px'}}>
+            Clear
+          </button>
+        </div>
 
         <div className="summary-box" style={{background: '#f9f9f9', padding: '15px', borderRadius: '8px', marginTop: '15px'}}>
           <p><strong>Extra Km:</strong> {calculations.extraKm} km (+ LKR {calculations.extraKmCost.toFixed(2)})</p>
@@ -198,9 +235,9 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
           </h3>
         </div>
 
-        <div className="modal-actions" style={{marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+        <div className="modal-actions">
           <button onClick={onClose} className="cancel-btn" disabled={loading}>Cancel</button>
-          <button onClick={handleConfirmReturn} className="confirm-btn" disabled={loading} style={{background: '#28a745', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '5px'}}>
+          <button onClick={handleConfirmReturn} className="confirm-btn" disabled={loading}>
             {loading ? 'Processing...' : 'Confirm Return & Close'}
           </button>
         </div>

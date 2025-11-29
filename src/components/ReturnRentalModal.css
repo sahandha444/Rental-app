@@ -1,89 +1,138 @@
-/* --- Modal Overlay & Container --- */
+/* File: src/components/ReturnRentalModal.css */
+
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6); /* Dark semi-transparent background */
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
-  align-items: center;
-  z-index: 1000; /* Ensure it's above other elements */
-  padding: 20px;
+  align-items: center; /* Centers vertically on desktop */
+  z-index: 2000;
+  padding: 10px; /* Small padding for mobile edges */
 }
 
 .modal-content {
   background-color: #ffffff;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  max-width: 550px;
+  padding: 25px; /* Comfortable padding */
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   width: 100%;
-  max-height: 90vh; /* Make sure it doesn't fill the whole screen vertically */
-  overflow-y: auto; /* Allow scrolling if content is long */
+  max-width: 600px; /* Wider on desktop */
+  max-height: 90vh; 
+  overflow-y: auto; 
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .modal-content h2 {
-  border-bottom: 2px solid #e9ecef;
-  padding-bottom: 10px;
-  margin-top: 0;
-  margin-bottom: 20px;
+  margin: 0 0 10px 0;
   color: #212529;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  font-size: 1.5rem;
 }
 
-/* --- Form Elements --- */
-.form-group {
-  margin-bottom: 15px;
-}
-
+/* --- Form Elements (Bigger for Touch) --- */
 .form-group label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   font-weight: 600;
   color: #495057;
+  font-size: 0.95rem;
 }
 
 .modal-content input[type="text"],
 .modal-content input[type="number"],
-.modal-content input[type="date"],
+.modal-content input[type="datetime-local"],
 .modal-content textarea {
   width: 100%;
-  padding: 10px;
+  padding: 12px 15px; /* Larger touch target */
   border: 1px solid #ced4da;
-  border-radius: 5px;
-  box-sizing: border-box; /* Crucial for padding/width calculation */
+  border-radius: 8px;
+  box-sizing: border-box; 
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  transition: border-color 0.2s;
 }
 
-/* --- Summary Box --- */
-.summary-box {
-  border: 1px solid #dee2e6;
+.modal-content input:focus,
+.modal-content textarea:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+/* --- Declaration Text --- */
+.declaration-text {
+  background: #fff3cd;
+  color: #856404;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #ffeeba;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  text-align: justify;
+}
+
+/* --- Signature Area --- */
+.signature-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.signature-box {
+  border: 2px dashed #ced4da;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden; /* Keeps canvas inside */
+}
+
+/* Force canvas to be taller */
+.sig-canvas {
+  width: 100% !important;
+  height: 200px !important; /* Taller for easier signing */
+  display: block;
 }
 
 /* --- Buttons --- */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
 .modal-actions button {
-  padding: 10px 15px;
-  border-radius: 5px;
-  cursor: pointer;
+  padding: 12px 20px; /* Bigger buttons */
+  border-radius: 8px;
+  font-size: 1rem;
   font-weight: 600;
-  transition: background-color 0.2s ease;
+  cursor: pointer;
+  border: none;
+  flex: 1; /* Stretch buttons on mobile */
 }
 
 .cancel-btn {
   background-color: #6c757d;
   color: white;
-  border: none;
-}
-
-.cancel-btn:hover {
-  background-color: #5a6268;
 }
 
 .confirm-btn {
-  /* Styles handled inline in JS, but here's a hover */
-  border: none;
+  background-color: #28a745;
+  color: white;
 }
 
-.confirm-btn:hover:not(:disabled) {
-  background-color: #1e7e34 !important; /* Darker green on hover */
+/* --- Mobile Specific Overrides --- */
+@media (max-width: 600px) {
+  .modal-overlay {
+    align-items: flex-end; /* Sheet-like behavior (optional) or keep center */
+    padding: 0;
+  }
+
+  .modal-content {
+    max-height: 95vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding: 20px;
+  }
 }
