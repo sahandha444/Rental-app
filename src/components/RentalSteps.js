@@ -305,7 +305,7 @@ export const RentalStep3 = ({ formData, setFormData, car, owner, totalCost, agre
     <div className="form-step-container">
       <h2>Step 3: Agreement & Confirmation</h2>
       
-      <div ref={agreementBoxRef} className="agreement-box" style={{border: '1px solid #ccc', padding: '40px', background: '#fff', fontFamily: '"Iskoola Pota", "Noto Sans Sinhala", Arial, sans-serif', color: '#000', lineHeight: '1.6', fontSize: '13px', textAlign: 'justify'}}>
+      <div ref={agreementBoxRef} className="agreement-box" style={{border: '1px solid #ccc', padding: '40px', background: '#fff', fontFamily: '"Iskoola Pota","Noto Serif Sinhala", "Noto Sans Sinhala", Arial, sans-serif', color: '#000', lineHeight: '1.6', fontSize: '13px', textAlign: 'justify'}}>
         <h3 style={{textAlign: 'center', textDecoration: 'underline', marginBottom: '15px', fontSize: '18px'}}>එකඟතා ගිවිසුමයි</h3>
         <p><span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> දින දීය.</p>
         
@@ -336,7 +336,7 @@ export const RentalStep3 = ({ formData, setFormData, car, owner, totalCost, agre
           <p>11). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය යම්කිසි අනතුරකදී හෝ නීතී විරෝධි කටයුත්තක් සඳහා යොදා ගැනීමකදී හෝ පොලිස් භාරයට පත් වුවහොත් එසේ පොලිස් භාරයේ තිබෙන දින ගණන සඳහා දිනකට අලාභ වශයෙන් රුපියල් <span style={blankStyle}>{car.daily_rate}</span> බැගින් වාහනයේ හිමිකරුට ගෙවිය යුතු වේ.</p>
           <p>12). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය භාරගත් තැනැත්තා විසින් තෙවන පාර්ශවයකට කුලියට දීමටද, වෙනත් අයෙකුට පැවරීමටද, විකිණීමටද තහනම් වේ.</p>
           <p>13). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනයේ ගමන් ගන්නා උපරිම මගින් ගණන <span style={blankStyle}>{car.passengers || 4}</span> වේ.</p>
-          <p>14). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනයේ එන්ජින් ඔයිල්, කුලන්, සහ ටයර් එයාර් පෙෂර් වැනි වාහනයේ භෞතික තත්වය පරීක්ෂා කර බලා ලබාගත් බවටත් ඒවා නොමැතිකමින් යම් දෝෂයක් වාහනය තුල ඇති වුවහොත් වාහනය භාරගත් පුද්ගලයා ඒ සඳහා අලාභ ගෙවිය යුතුය.</p>
+          <p>14). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනයේ එන්ජින් ඔයිල්, කුලන්ට්, සහ ටයර් එයාර් ප්‍රෙෂර් වැනි වාහනයේ භෞතික තත්වය පරීක්ෂා කර බලා ලබාගත් බවටත් ඒවා නොමැතිකමින් යම් දෝෂයක් වාහනය තුල ඇති වුවහොත් වාහනය භාරගත් පුද්ගලයා ඒ සඳහා අලාභ ගෙවිය යුතුය.</p>
           <p>15). රියදුරු බලපත්‍රයක් නොමැති අයට ද, අවුරුදු 18ට අඩු අයට ද මනා පලපුරුද්දක් නොමැති අයට ද සහ බලපත්‍රයක් ඇති අයවලුන් හට වාහනය පැදවීම තහනම් වන අතර වාහනය භාරගන්නා පුද්ගලයා අදාල සුදුසුකම් සපුරා තිබිය යුතුය.</p>
           <p>16). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය ආපසු භාර දීමේදී ඇතුළත හා පිටත පිරිසිදු කර භාර දිය යුතු අතර එසේ නොමැති අවස්ථාවකදී ඒ සඳහා පිරිසිදු කිරීමට වැය වන මුදල වශයෙන් රුපියල් <span style={blankStyle}>1500/=</span> ක් පිරිසිදු කිරීමේ ගාස්තු වශයෙන් ගෙවිය යුතුය.</p>
           <p>17). අංක <span style={blankStyle}>{car.plate_number}</span> දරණ වාහනය ඉහත සඳහන් වගන්ති හා කොන්දේසි වලට යටත්ව පාවිච්චි කිරීමටත් වාහනය භාර ගත් තත්වයෙන්ම භාර දීමට එකඟ වන මම, වාහන හිමිකරු සමග <span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> වන දින මාතර දී ගිවිස ගත් බවට සහතික කරමි.</p>
@@ -371,27 +371,37 @@ export const RentalStep3 = ({ formData, setFormData, car, owner, totalCost, agre
           </div>
         </div>
 
-        {/* --- GUARANTORS SECTION (UPDATED) --- */}
+        {/* --- GUARANTORS SECTION (FIXED ALIGNMENT) --- */}
         <div style={{marginTop: '30px'}}>
           <strong>ඇපකරුවන් :</strong>
           
           {/* Guarantor 1 */}
           <div style={{marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end'}}>
-            {/* 🆕 NAME IS NOW DYNAMIC */}
-            <span style={{width: '60%'}}>1. නම: <span>{formData.guarantor1Name || '...........................................'}</span></span>
+            {/* Added marginBottom to lift the name up to align with the signature line */}
+            <div style={{width: '65%', marginBottom: '20px'}}>
+              1. නම: <span>{formData.guarantor1Name || '...........................................'}</span>
+            </div>
+            
             <div style={{textAlign: 'center', width: '30%'}}>
+               {/* Signature Line */}
                <div id="g1-sig-placeholder" style={{width: '100%', height: '40px', borderBottom: '1px dotted #000', position: 'relative'}}></div>
-               <span>අත්සන</span>
+               {/* Label */}
+               <span style={{fontSize: '12px'}}>අත්සන</span>
             </div>
           </div>
 
           {/* Guarantor 2 */}
           <div style={{marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end'}}>
-            {/* 🆕 NAME IS NOW DYNAMIC */}
-            <span style={{width: '60%'}}>2. නම: <span>{formData.guarantor2Name || '...........................................'}</span></span>
+            {/* Added marginBottom to lift the name up */}
+            <div style={{width: '65%', marginBottom: '20px'}}>
+              2. නම: <span>{formData.guarantor2Name || '...........................................'}</span>
+            </div>
+
             <div style={{textAlign: 'center', width: '30%'}}>
+               {/* Signature Line */}
                <div id="g2-sig-placeholder" style={{width: '100%', height: '40px', borderBottom: '1px dotted #000', position: 'relative'}}></div>
-               <span>අත්සන</span>
+               {/* Label */}
+               <span style={{fontSize: '12px'}}>අත්සන</span>
             </div>
           </div>
         </div>
