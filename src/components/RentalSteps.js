@@ -305,7 +305,7 @@ export const RentalStep3 = ({ formData, setFormData, car, owner, totalCost, agre
     <div className="form-step-container">
       <h2>Step 3: Agreement & Confirmation</h2>
       
-      <div ref={agreementBoxRef} className="agreement-box" style={{border: '1px solid #ccc', padding: '40px', background: '#fff', fontFamily: '"Iskoola Pota","Noto Serif Sinhala", "Noto Sans Sinhala", Arial, sans-serif', color: '#000', lineHeight: '1.6', fontSize: '13px', textAlign: 'justify'}}>
+      <div ref={agreementBoxRef} className="agreement-box" style={{border: '1px solid #ccc', padding: '40px',paddingBottom: '100px', background: '#fff', fontFamily: '"Iskoola Pota","Noto Serif Sinhala", "Noto Sans Sinhala", Arial, sans-serif', color: '#000', lineHeight: '1.6', fontSize: '13px', textAlign: 'justify'}}>
         <h3 style={{textAlign: 'center', textDecoration: 'underline', marginBottom: '15px', fontSize: '18px'}}>එකඟතා ගිවිසුමයි</h3>
         <p><span style={blankStyle}>{year}</span> වර්ෂ <span style={blankStyle}>{month}</span> මස <span style={blankStyle}>{day}</span> දින දීය.</p>
         

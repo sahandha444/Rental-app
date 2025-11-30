@@ -78,10 +78,11 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
   container.appendChild(clone);
   document.body.appendChild(container);
 
-  // 👇 CHANGED: Increased buffer from 30 to 150 to prevent cut-off
-  const fullHeight = clone.scrollHeight + 150; 
+  // 👇 CHANGED: Increased buffer to 400px to guarantee no cut-off
+  const fullHeight = clone.scrollHeight + 400; 
   
-  await new Promise(r => setTimeout(r, 150));
+  // Wait slightly longer for layout to settle
+  await new Promise(r => setTimeout(r, 200));
 
   const canvas = await html2canvas(clone, {
     scale: 1.5,
@@ -90,12 +91,13 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
     width: 794,
     height: fullHeight,       // <--- Uses the new taller height
     windowWidth: 794,
-    windowHeight: fullHeight, // <--- Ensures the window sees the whole thing
+    windowHeight: fullHeight, 
     scrollY: 0,
     logging: false,
   });
 
   document.body.removeChild(container);
+  
   // 5. Generate PDF
   const imgData = canvas.toDataURL("image/jpeg", 0.8); // JPEG for speed
   
