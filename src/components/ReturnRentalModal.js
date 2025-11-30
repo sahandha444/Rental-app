@@ -31,7 +31,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
   const getFormattedDateParts = (isoString) => {
     const d = new Date(isoString);
     return {
-      year: String(d.getFullYear()).slice(-2), // Get last 2 digits (e.g., 25)
+      year: String(d.getFullYear()).slice(-2), 
       month: d.getMonth() + 1,
       day: d.getDate(),
       time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -39,6 +39,13 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
   };
 
   const dateParts = getFormattedDateParts(returnDateTime);
+
+  // --- Helper: Force Keyboard Close on Mobile ---
+  const dismissKeyboard = () => {
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur(); // Closes the number pad/keyboard
+    }
+  };
 
   // --- 1. Calculations ---
   useEffect(() => {
@@ -60,7 +67,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
     const actualReturnDate = new Date(returnDateTime);
     let lateHours = 0;
     const diffMs = actualReturnDate - expectedReturnDate;
-    if (diffMs > 0) lateHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffMs > 0) lateHours = Math.ceil(diffMs / (1000 * 60 * 60));
     const lateFeeCost = lateHours * (car.late_fee_per_hour || car.extra_hourly_rate || 0);
 
     const baseCost = rental.rental_days * (car.daily_rate || 0);
@@ -105,7 +112,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
         signatureUrl: sigDataUrl 
       };
 
-      // B. Generate & Upload Invoice (To 'photos' bucket)
+      // B. Generate & Upload Invoice
       setStatusMsg('Generating Invoice... 🧾');
       const invoiceFile = await generateInvoicePDF(rental, car, returnData);
       const invFileName = `invoices/invoice-${rental.id}-${uuidv4()}.pdf`; 
@@ -113,7 +120,7 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
       await supabase.storage.from('photos').upload(invFileName, invoiceFile); 
       const { data: invUrlData } = supabase.storage.from('photos').getPublicUrl(invFileName);
 
-      // C. Generate & Upload Return Agreement (To 'photos' bucket)
+      // C. Generate & Upload Return Agreement
       setStatusMsg('Generating Return Doc... 📄');
       const returnDocFile = await generateReturnAgreementPDF(rental, car, returnData);
       const returnDocName = `agreements/return-doc-${rental.id}-${uuidv4()}.pdf`; 
@@ -205,30 +212,34 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
           <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} />
         </div>
 
-        {/* --- 🆕 UPDATED: Sinhala Return Agreement Text --- */}
+        {/* Declaration Text */}
         <div className="declaration-text" style={{fontFamily: '"Iskoola Pota", "Noto Sans Sinhala", sans-serif', fontSize: '0.85rem', lineHeight: '1.6'}}>
           <strong>ප්‍රකාශය:</strong> <br/>
           {rental.customer_address} හි පදිංචි <strong>{rental.customer_name}</strong> (ජා.හැ.අංක. {rental.customer_id}) වන මා විසින් 
-          මාතර යාලු ටුවර්ස් ඇන්ඩ් රෙන්ට් අ කාර් ආයතනයෙන් අංක <strong>{car.plate_number}</strong> දරණ <strong>{car.name}</strong> වර්ගයේ වාහනය 
+          මාතර යාළුවෝ ටුවර්ස් ඇන්ඩ් රෙන්ට් අ කාර් ආයතනයෙන් අංක <strong>{car.plate_number}</strong> දරණ <strong>{car.name}</strong> වර්ගයේ වාහනය 
           ඉහත සඳහන් ගිවිසුම හා කොන්දේසි වලට යටත්ව 20<strong>{dateParts.year}</strong> ක්වූ <strong>{dateParts.month}</strong> මස <strong>{dateParts.day}</strong> දින <strong>{dateParts.time}</strong> ට 
           වාහනය භාරදුන් බවට මෙයින් සහතික කරමි.
         </div>
 
         {/* Signature */}
-          <div className="signature-section">
-            <label>Customer Return Signature</label>
-            <div className="signature-box">
-              <SignatureCanvas 
-                ref={sigPad} 
-                penColor='black' 
-                clearOnResize={false} // <--- 🛑 THIS FIXES THE BUG
-                canvasProps={{ className: 'sig-canvas' }} 
-              />
-            </div>
-            <button type="button" onClick={clearSignature} style={{marginTop: '5px', fontSize: '0.8rem', padding: '5px 10px', background: '#f8f9fa', border: '1px solid #ccc', borderRadius: '4px'}}>
-              Clear
-            </button>
+        <div className="signature-section">
+          <label>Customer Return Signature</label>
+          <div 
+            className="signature-box" 
+            style={{touchAction: 'none'}} // 1. CSS fix for scrolling
+          >
+            <SignatureCanvas 
+              ref={sigPad} 
+              penColor='black' 
+              clearOnResize={false} // 2. JS fix for resize/keyboard clear
+              onBegin={dismissKeyboard} // 3. Logic fix for focus jumping
+              canvasProps={{ className: 'sig-canvas' }} 
+            />
           </div>
+          <button type="button" onClick={clearSignature} style={{marginTop: '5px', fontSize: '0.8rem', padding: '5px 10px', background: '#f8f9fa', border: '1px solid #ccc', borderRadius: '4px'}}>
+            Clear
+          </button>
+        </div>
 
         <div className="summary-box" style={{background: '#f9f9f9', padding: '15px', borderRadius: '8px', marginTop: '15px'}}>
           <p><strong>Extra Km:</strong> {calculations.extraKm} km (+ LKR {calculations.extraKmCost.toFixed(2)})</p>
