@@ -215,15 +215,20 @@ const ReturnRentalModal = ({ rental, car, onClose, onSuccess }) => {
         </div>
 
         {/* Signature */}
-        <div className="signature-section">
-          <label>Customer Return Signature</label>
-          <div className="signature-box">
-            <SignatureCanvas ref={sigPad} penColor='black' canvasProps={{ className: 'sig-canvas' }} />
+          <div className="signature-section">
+            <label>Customer Return Signature</label>
+            <div className="signature-box">
+              <SignatureCanvas 
+                ref={sigPad} 
+                penColor='black' 
+                clearOnResize={false} // <--- 🛑 THIS FIXES THE BUG
+                canvasProps={{ className: 'sig-canvas' }} 
+              />
+            </div>
+            <button type="button" onClick={clearSignature} style={{marginTop: '5px', fontSize: '0.8rem', padding: '5px 10px', background: '#f8f9fa', border: '1px solid #ccc', borderRadius: '4px'}}>
+              Clear
+            </button>
           </div>
-          <button type="button" onClick={clearSignature} style={{marginTop: '5px', fontSize: '0.8rem', padding: '5px 10px', background: '#f8f9fa', border: '1px solid #ccc', borderRadius: '4px'}}>
-            Clear
-          </button>
-        </div>
 
         <div className="summary-box" style={{background: '#f9f9f9', padding: '15px', borderRadius: '8px', marginTop: '15px'}}>
           <p><strong>Extra Km:</strong> {calculations.extraKm} km (+ LKR {calculations.extraKmCost.toFixed(2)})</p>

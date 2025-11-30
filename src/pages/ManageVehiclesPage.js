@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import imageCompression from 'browser-image-compression'; 
+import EditVehicleModal from '../components/EditVehicleModal'; // <--- 1. MISSING IMPORT ADDED
 import './ManageVehiclesPage.css';
 
 // --- 🛠️ HELPER: DUAL UPLOAD BUTTONS ---
@@ -15,7 +16,6 @@ const ImageUploadControl = ({ id, label, onChange }) => {
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       setFileName(e.target.files[0].name);
-      // Pass event back to parent
       const syntheticEvent = {
         target: { id: id, files: e.target.files }
       };
@@ -50,7 +50,6 @@ const ImageUploadControl = ({ id, label, onChange }) => {
         </div>
       )}
 
-      {/* Buttons */}
       <div style={{ display: 'flex', gap: '10px' }}>
         <button type="button" style={btnStyle} onClick={() => cameraInputRef.current.click()}>
           📷 Camera
@@ -60,19 +59,18 @@ const ImageUploadControl = ({ id, label, onChange }) => {
         </button>
       </div>
 
-      {/* Hidden Inputs */}
       <input
         ref={cameraInputRef}
         type="file"
         accept="image/*"
-        capture="environment" // Force Camera
+        capture="environment"
         style={{ display: 'none' }}
         onChange={handleFileSelect}
       />
       <input
         ref={galleryInputRef}
         type="file"
-        accept="image/jpeg, image/png, image/jpg" // Force Gallery/File Picker
+        accept="image/jpeg, image/png, image/jpg"
         style={{ display: 'none' }}
         onChange={handleFileSelect}
       />
@@ -101,6 +99,9 @@ const ManageVehiclesPage = () => {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // 2. MISSING STATE ADDED
+  const [editingVehicle, setEditingVehicle] = useState(null);
+
   // Form State
   const [name, setName] = useState('');
   const [plate, setPlate] = useState('');
@@ -111,10 +112,8 @@ const ManageVehiclesPage = () => {
   const [photo, setPhoto] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   
-  // Key to force-reset the upload component after submit
   const [formKey, setFormKey] = useState(0);
 
-  // Fetch all vehicles
   useEffect(() => {
     fetchVehicles();
   }, []);
@@ -150,7 +149,7 @@ const ManageVehiclesPage = () => {
     setExtraMileRate('');
     setExtraHourRate('');
     setPhoto(null);
-    setFormKey(prev => prev + 1); // This resets the ImageUploadControl text
+    setFormKey(prev => prev + 1); 
   };
 
   const handleAddVehicle = async (e) => {
@@ -162,10 +161,7 @@ const ManageVehiclesPage = () => {
     setSubmitting(true);
     
     try {
-      // 1. Compress Image
       const compressedPhoto = await compressImage(photo);
-
-      // 2. Upload the photo
       const fileName = `${uuidv4()}-${photo.name}`;
       const filePath = `vehicle-photos/${fileName}`;
 
@@ -181,7 +177,6 @@ const ManageVehiclesPage = () => {
       
       const imageUrl = urlData.publicUrl;
 
-      // 3. Insert into DB
       const { error: insertError } = await supabase
         .from('vehicles')
         .insert([
@@ -258,9 +253,8 @@ const ManageVehiclesPage = () => {
           <label htmlFor="extraHourRate">Extra Hourly Rate (LKR per hour)</label>
           <input type="number" step="0.01" id="extraHourRate" className="form-input" value={extraHourRate} onChange={(e) => setExtraHourRate(e.target.value)} required />
 
-          {/* 🆕 UPDATED: Dual Camera/Gallery Buttons */}
           <ImageUploadControl 
-            key={formKey} // Force reset on submit
+            key={formKey} 
             id="photo" 
             label="Vehicle Photo (for dashboard)" 
             onChange={handleFileChange} 
@@ -295,7 +289,15 @@ const ManageVehiclesPage = () => {
                 <td>{vehicle.plate_number}</td>
                 <td>{vehicle.status}</td>
                 <td>{vehicle.is_active ? 'Yes' : 'No'}</td>
-                <td>
+                <td style={{display: 'flex', gap: '5px'}}>
+                  {/* 3. MISSING EDIT BUTTON ADDED */}
+                  <button 
+                    className="toggle-button" 
+                    style={{backgroundColor: '#007bff'}}
+                    onClick={() => setEditingVehicle(vehicle)}
+                  >
+                    Edit
+                  </button>
                   <button 
                     className={`toggle-button ${vehicle.is_active ? 'deactivate' : 'activate'}`}
                     onClick={() => handleToggleActive(vehicle.id, vehicle.is_active)}
@@ -308,6 +310,15 @@ const ManageVehiclesPage = () => {
           </tbody>
         </table>
       </div>
+
+      {/* 4. MISSING MODAL RENDERING ADDED */}
+      {editingVehicle && (
+        <EditVehicleModal 
+          vehicle={editingVehicle} 
+          onClose={() => setEditingVehicle(null)} 
+          onSuccess={fetchVehicles} 
+        />
+      )}
     </div>
   );
 };

@@ -5,9 +5,7 @@
   margin: 0 auto;
 }
 
-/* Reusing generic form styles if available in global CSS, 
-   otherwise specific overrides can go here */
-
+/* --- BUTTON STYLES --- */
 .toggle-button {
   padding: 0.5rem 1rem;
   border: none;
@@ -16,6 +14,7 @@
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
+  white-space: nowrap; /* Prevents text wrapping inside button */
 }
 
 .toggle-button.deactivate {
@@ -37,7 +36,7 @@
 .vehicles-list-container {
   margin-top: 2rem;
   width: 100%;
-  overflow-x: auto; /* <--- Enables horizontal scrolling on mobile */
+  overflow-x: auto; 
   -webkit-overflow-scrolling: touch;
   border: 1px solid #e9ecef;
   border-radius: 8px;
@@ -53,11 +52,11 @@
   font-size: 1.25rem;
 }
 
-/* 2. The Table */
+/* 2. The Table (Restored to original clean look) */
 .vehicles-table {
   width: 100%;
-  border-collapse: collapse;
-  min-width: 600px; /* Forces table to be wide enough to read */
+  border-collapse: collapse; /* Kept 'collapse' for clean borders */
+  min-width: 600px; 
 }
 
 .vehicles-table th,
@@ -65,7 +64,8 @@
   padding: 12px 15px;
   text-align: left;
   border-bottom: 1px solid #dee2e6;
-  white-space: nowrap; /* Prevents text wrapping */
+  white-space: nowrap;
+  vertical-align: middle; /* Ensures text is centered vertically */
 }
 
 .vehicles-table th {
@@ -74,23 +74,37 @@
   font-weight: 600;
 }
 
-/* 3. Sticky Action Column (Keeps buttons visible) */
-.vehicles-table td:last-child,
-.vehicles-table th:last-child {
+/* 3. Sticky Action Column (Fixed Alignment) */
+/* This targets the LAST column (Actions) specifically */
+.vehicles-table td:last-child {
   position: sticky;
   right: 0;
   background-color: #fff;
   border-left: 1px solid #dee2e6;
   z-index: 2;
-  text-align: center;
+  
+  /* Flexbox to Center Buttons */
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center;     /* Center vertically */
+  gap: 10px;               /* Space between Edit and Deactivate */
+  
+  /* Fix for Flex inside Table Cell */
+  height: 100%; 
+  border-bottom: 1px solid #dee2e6; /* Re-apply border since flex might hide it */
 }
 
-/* Ensure header background matches */
+/* Header Action Column */
 .vehicles-table th:last-child {
-  background-color: #fff; 
+  position: sticky;
+  right: 0;
+  background-color: #fff;
+  border-left: 1px solid #dee2e6;
+  z-index: 3;
+  text-align: center; /* Center the word "Actions" */
 }
 
-/* Handle row background for sticky column in inactive rows */
+/* Inactive Row Background Fix for Sticky Column */
 .vehicles-table tr.inactive td:last-child {
   background-color: #f9f9f9;
 }
