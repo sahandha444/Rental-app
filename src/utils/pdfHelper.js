@@ -20,99 +20,93 @@ export const generateAgreementPDF = async (agreementBoxElement, signatureCanvas,
 
   // 2. Clone and Setup
   const clone = agreementBoxElement.cloneNode(true);
+  
+  // FORCE Desktop Width (Critical for Mobile Fix)
   clone.style.width = "794px"; 
+  clone.style.minWidth = "794px"; // Prevent squishing
   clone.style.maxWidth = "794px";
   clone.style.boxSizing = "border-box"; 
   clone.style.padding = "40px"; 
+  clone.style.paddingBottom = "100px"; // Extra padding at bottom
   clone.style.backgroundColor = "#ffffff";
   clone.style.border = "none"; 
   clone.style.height = "auto";
   clone.style.maxHeight = "none";
   clone.style.overflow = "visible";
+  clone.style.position = "absolute"; // Take out of flow
 
-  // --- 3. INJECT SIGNATURES (The Missing Part) ---
-
-  // Helper to place an image into a placeholder ID
+  // 3. INJECT SIGNATURES MANUALLY
   const injectSignature = (placeholderId, dataUrl) => {
     const placeholder = clone.querySelector(`#${placeholderId}`);
     if (placeholder && dataUrl) {
       const img = document.createElement("img");
       img.src = dataUrl;
-      
-      // Styling to make it sit perfectly on the dotted line
-      img.style.maxHeight = "40px"; // Fit height
+      img.style.maxHeight = "40px"; 
       img.style.maxWidth = "100%";
       img.style.position = "absolute";
       img.style.bottom = "5px"; 
       img.style.left = "50%";
-      img.style.transform = "translateX(-50%)"; // Center horizontally
+      img.style.transform = "translateX(-50%)"; 
       img.style.zIndex = "10";
-      
       placeholder.appendChild(img);
     }
   };
 
-  // A. Customer Signature (From Live Canvas)
   if (!signatureCanvas.isEmpty()) {
     injectSignature('customer-sig-placeholder', signatureCanvas.toDataURL('image/png'));
   }
-
-  // B. Guarantor 1 Signature (From Saved Data)
   if (formData.guarantor1Sign) {
     injectSignature('g1-sig-placeholder', formData.guarantor1Sign);
   }
-
-  // C. Guarantor 2 Signature (From Saved Data)
   if (formData.guarantor2Sign) {
     injectSignature('g2-sig-placeholder', formData.guarantor2Sign);
   }
 
-  // -------------------------------------
-
-// 4. Render Offscreen
+  // 4. Render Offscreen (The Mobile Fix)
   const container = document.createElement("div");
-  container.style.position = "absolute";
-  container.style.left = "-9999px"; 
+  // Force the container to be wide enough, even on a small phone screen
+  container.style.position = "fixed"; 
   container.style.top = "0";
+  container.style.left = "0";
   container.style.width = "794px"; 
+  container.style.height = "0"; // Hide it visually but keep width logic
+  container.style.overflow = "visible";
+  container.style.zIndex = "-9999";
+  
   container.appendChild(clone);
   document.body.appendChild(container);
 
-  // 👇 CHANGED: Increased buffer to 400px to guarantee no cut-off
+  // Big safety buffer for mobile font rendering differences
   const fullHeight = clone.scrollHeight + 400; 
   
-  // Wait slightly longer for layout to settle
-  await new Promise(r => setTimeout(r, 200));
+  await new Promise(r => setTimeout(r, 250)); // Slightly longer wait for mobile
 
   const canvas = await html2canvas(clone, {
     scale: 1.5,
     useCORS: true,
     backgroundColor: "#ffffff",
     width: 794,
-    height: fullHeight,       // <--- Uses the new taller height
-    windowWidth: 794,
-    windowHeight: fullHeight, 
+    height: fullHeight,
+    windowWidth: 794, // <--- CRITICAL: Pretend we are on a desktop
+    windowHeight: fullHeight,
     scrollY: 0,
     logging: false,
   });
 
   document.body.removeChild(container);
-  
+
   // 5. Generate PDF
-  const imgData = canvas.toDataURL("image/jpeg", 0.8); // JPEG for speed
+  const imgData = canvas.toDataURL("image/jpeg", 0.8); 
   
   const pdf = new jsPDF("p", "pt", "a4");
   const pageWidth = pdf.internal.pageSize.width; 
   const pageHeight = pdf.internal.pageSize.height; 
-  
-  const imgProps = pdf.getImageProperties(imgData);
   const pdfWidth = pageWidth;
-  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+  const pdfHeight = (canvas.height * pdfWidth) / canvas.width; // Calc based on canvas ratio
 
   let heightLeft = pdfHeight;
   let position = 0;
 
-  // Add pages
   pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight, '', 'FAST');
   heightLeft -= pageHeight;
 
